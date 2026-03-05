@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRON LOG — Gym Tracker</title>
+<link rel="stylesheet" href="./styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+
+</head>
+<body>
+
+<header>
+  <div class="logo">IRON<span> MAN</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('setup')">Configurar</button>
+    <button class="nav-tab" onclick="showPage('workout')">Entrenar</button>
+    <button class="nav-tab" onclick="showPage('prs')">PRs</button>
+    <button class="nav-tab" onclick="showPage('history')">Historial</button>
+  </div>
+</header>
+
+<!-- ================== SETUP PAGE ================== -->
+<div id="page-setup" class="page active">
+  <div class="section-title">TU <span>PROGRAMA</span></div>
+  <div class="section-sub">Configurá tu rutina semanal</div>
+
+  <div class="setup-grid">
+    <!-- LEFT: Days + Name -->
+    <div>
+      <div class="setup-card" style="margin-bottom:20px">
+        <h3>NOMBRE DEL PROGRAMA</h3>
+        <label>¿Cómo llamás a tu rutina?</label>
+        <input type="text" id="program-name" placeholder="ej. Push Pull Legs, Torso Pierna..." value="">
+      </div>
+
+      <div class="setup-card">
+        <h3>DÍAS DE ENTRENAMIENTO</h3>
+        <label>¿Cuántos días por semana entrenás?</label>
+        <div class="days-selector" id="days-selector">
+          <button class="day-btn" onclick="selectDays(1)">1</button>
+          <button class="day-btn" onclick="selectDays(2)">2</button>
+          <button class="day-btn" onclick="selectDays(3)">3</button>
+          <button class="day-btn" onclick="selectDays(4)">4</button>
+          <button class="day-btn" onclick="selectDays(5)">5</button>
+          <button class="day-btn" onclick="selectDays(6)">6</button>
+          <button class="day-btn" onclick="selectDays(7)">7</button>
+        </div>
+        <div id="day-labels-section" style="display:none">
+          <label>Asigná un nombre a cada día de entrenamiento</label>
+          <div id="day-labels-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Exercises per day -->
+    <div class="setup-card">
+      <h3>EJERCICIOS POR DÍA</h3>
+      <div id="day-config-container">
+        <div class="empty-state" style="padding:40px">
+          <div class="empty-icon">💪</div>
+          <div class="empty-text" style="font-size:1.2rem">Seleccioná los días primero</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:28px">
+    <button class="btn btn-primary" onclick="saveProgram()">GUARDAR PROGRAMA →</button>
+  </div>
+</div>
+
+<!-- ================== WORKOUT PAGE ================== -->
+<div id="page-workout" class="page">
+  <div id="workout-content">
+    <div class="empty-state">
+      <div class="empty-icon">🏋️</div>
+      <div class="empty-text">No hay programa cargado</div>
+      <div class="empty-sub">Configurá tu programa en la pestaña "Configurar"</div>
+      <button class="btn btn-ghost" onclick="showPage('setup')" style="margin-top:12px">IR A CONFIGURAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================== PR PAGE ================== -->
+<div id="page-prs" class="page">
+  <div class="section-title">RECORDS <span>PERSONALES</span></div>
+  <div class="section-sub">Tus mejores marcas de siempre</div>
+  <div id="pr-grid" class="pr-grid"></div>
+</div>
+
+<!-- ================== HISTORY PAGE ================== -->
+<div id="page-history" class="page">
+  <div class="section-title">HISTORIAL <span>DE SESIONES</span></div>
+  <div class="section-sub">Todo tu trabajo registrado</div>
+  <div id="history-list" class="history-list"></div>
+</div>
+
+<!-- ================== MODAL ADD EXERCISE ================== -->
+<div class="modal-overlay" id="modal-add-exercise">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>AGREGAR <span class="text-accent">EJERCICIO</span></h2>
+    <div class="modal-sub" id="modal-day-label">Día de entrenamiento</div>
+
+    <label>Buscar o escribir ejercicio</label>
+    <input type="text" id="custom-ex-input" placeholder="ej. Press Banca, Curl Martillo..." oninput="filterExercises()">
+
+    <label>Ejercicios populares</label>
+    <div class="exercise-catalog" id="exercise-catalog"></div>
+
+    <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">CANCELAR</button>
+      <button class="btn btn-primary" onclick="addExerciseToDay()">AGREGAR →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="./script.js"></script>
+</body>
+</html>
