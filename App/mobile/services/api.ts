@@ -85,7 +85,74 @@ export type User = {
   avatar_url: string | null;
   premium: boolean;
   premium_until: string | null;
+  health_conditions: string[] | null;
   contribution_count: number;
+};
+
+export type NutrientAnalysis = {
+  field: string;
+  name: string;
+  value: number;
+  unit: string;
+  level: 'high' | 'medium' | 'low';
+  explanation: string;
+};
+
+export type AdditiveAnalysis = {
+  code: string;
+  name: string;
+  risk_level: 'green' | 'yellow' | 'red';
+  type: string;
+  explanation: string;
+};
+
+export type AdvancedAnalysis = {
+  barcode: string;
+  product_name: string;
+  nutrients: NutrientAnalysis[];
+  additives: AdditiveAnalysis[];
+  summary: string;
+};
+
+export type HealthAlert = {
+  condition: string;
+  label: string;
+  message: string;
+  severity: 'high' | 'medium';
+};
+
+export type HealthCheckResult = {
+  alerts: HealthAlert[];
+  is_safe: boolean;
+  message: string;
+};
+
+export type HealthCondition = {
+  key: string;
+  label: string;
+};
+
+export type CompareProduct = {
+  barcode: string;
+  name: string;
+  brand: string | null;
+  image_url: string | null;
+  health_score: number;
+  score_label: ScoreLabel;
+  sugars: number;
+  sodium_mg: number;
+  fat_saturated: number;
+  energy_kcal: number;
+  protein: number;
+  fiber: number;
+  additives_count: number;
+};
+
+export type CompareResult = {
+  products: CompareProduct[];
+  best_barcode: string;
+  best_name: string;
+  recommendation: string;
 };
 
 export type HistoryItem = Product & {
@@ -153,4 +220,20 @@ export const api = {
 
   searchAdditives: (q: string): Promise<{ e_number: string; name: string; risk_level: string; type: string; description: string; possible_health_effects: string }[]> =>
     apiClient.get('/products/additives/search', { params: { q } }).then((r) => r.data),
+
+  // ── Premium ───────────────────────────────────────────────────────────────
+  getAdvancedAnalysis: (barcode: string): Promise<AdvancedAnalysis> =>
+    apiClient.get(`/premium/products/${barcode}/advanced-analysis`).then((r) => r.data),
+
+  getHealthProfile: (): Promise<{ conditions: string[]; supported_conditions: HealthCondition[] }> =>
+    apiClient.get('/premium/me/health-profile').then((r) => r.data),
+
+  updateHealthProfile: (conditions: string[]) =>
+    apiClient.put('/premium/me/health-profile', { conditions }).then((r) => r.data),
+
+  getHealthCheck: (barcode: string): Promise<HealthCheckResult> =>
+    apiClient.get(`/premium/products/${barcode}/health-check`).then((r) => r.data),
+
+  compareProducts: (barcodes: string[]): Promise<CompareResult> =>
+    apiClient.post('/premium/products/compare', { barcodes }).then((r) => r.data),
 };

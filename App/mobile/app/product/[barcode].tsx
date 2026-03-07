@@ -12,12 +12,13 @@ import { HealthScoreWheel } from '@/components/HealthScoreWheel';
 import { NutrientTrafficLight } from '@/components/NutrientTrafficLight';
 import { WarningBadge } from '@/components/WarningBadge';
 import { AlternativeCard } from '@/components/AlternativeCard';
+import { PremiumGate } from '@/components/PremiumGate';
 import { useProductStore } from '@/store/useProductStore';
 import { Colors, ScoreColors } from '@/constants/colors';
 import { api } from '@/services/api';
 import { storage } from '@/services/storage';
 import type { ScoreLabel } from '@/constants/colors';
-import type { Product, AdditiveDetail, DataQuality } from '@/services/api';
+import type { Product, AdditiveDetail, DataQuality, AdvancedAnalysis, HealthCheckResult } from '@/services/api';
 
 const RISK_COLORS = {
   green:  { bg: '#D4EDDA', border: '#C3E6CB', text: '#155724', dot: '#28a745' },
@@ -183,7 +184,7 @@ function buildQuickSummary(
 
 export default function ProductDetailScreen() {
   const { barcode } = useLocalSearchParams<{ barcode: string }>();
-  const { scanProduct, addFavorite, removeFavorite, isFavorite, refreshHistoryItem } = useProductStore();
+  const { scanProduct, addFavorite, removeFavorite, isFavorite, refreshHistoryItem, user } = useProductStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [alternatives, setAlternatives] = useState<Product[]>([]);
@@ -215,6 +216,9 @@ export default function ProductDetailScreen() {
   const [showNutrition, setShowNutrition] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
   const [localSuggestion, setLocalSuggestion] = useState<import('@/services/storage').LocalSuggestion | null>(null);
+  const [advancedAnalysis, setAdvancedAnalysis] = useState<AdvancedAnalysis | null>(null);
+  const [healthCheck, setHealthCheck] = useState<HealthCheckResult | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const isFav = product ? isFavorite(product.id) : false;
 
@@ -313,6 +317,11 @@ export default function ProductDetailScreen() {
       await storage.refreshLocalFavorite(mergedProduct);
     })();
   }, [barcode]);
+
+  useEffect(() => {
+    if (!product || !user?.premium || !barcode) return;
+    api.getHealthCheck(barcode).then(setHealthCheck).catch(() => {});
+  }, [product, user?.premium]);
 
   const openSuggestModal = () => {
     setSuggestIngredients(product?.ingredients_text ?? '');
@@ -601,6 +610,71 @@ export default function ProductDetailScreen() {
             </View>
           </View>
         )}
+
+        {/* Alertas de salud personalizadas (premium) */}
+        {user?.premium && healthCheck && healthCheck.alerts.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Alertas de salud personalizadas</Text>
+            {healthCheck.alerts.map((alert, i) => (
+              <View key={i} style={[styles.healthAlert, alert.severity === 'high' ? styles.healthAlertHigh : styles.healthAlertMedium]}>
+                <Ionicons name={alert.severity === 'high' ? 'warning' : 'alert-circle'} size={16} color={alert.severity === 'high' ? '#721C24' : '#856404'} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.healthAlertLabel, { color: alert.severity === 'high' ? '#721C24' : '#856404' }]}>{alert.label}</Text>
+                  <Text style={[styles.healthAlertMsg, { color: alert.severity === 'high' ? '#721C24' : '#856404' }]}>{alert.message}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Análisis nutricional avanzado (premium) */}
+        <View style={styles.section}>
+          <Pressable style={styles.premiumSectionHeader} onPress={() => {
+            if (!user?.premium) return;
+            if (!showAdvanced) {
+              api.getAdvancedAnalysis(barcode!).then(setAdvancedAnalysis).catch(() => {});
+            }
+            setShowAdvanced((v) => !v);
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.sectionTitle}>Análisis nutricional avanzado</Text>
+              <View style={styles.premiumBadge}><Text style={styles.premiumBadgeText}>PREMIUM</Text></View>
+            </View>
+            {user?.premium && <Ionicons name={showAdvanced ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.primary} />}
+          </Pressable>
+
+          {!user?.premium && <PremiumGate feature="El análisis nutricional avanzado" />}
+
+          {user?.premium && showAdvanced && (
+            advancedAnalysis ? (
+              <View style={{ gap: 12, marginTop: 8 }}>
+                <Text style={styles.advancedSummary}>{advancedAnalysis.summary}</Text>
+                {advancedAnalysis.nutrients.map((n) => (
+                  <View key={n.field} style={[styles.advancedNutrient, n.level === 'high' ? styles.advancedHigh : n.level === 'medium' ? styles.advancedMedium : styles.advancedLow]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={styles.advancedNutrientName}>{n.name}</Text>
+                      <Text style={styles.advancedNutrientValue}>{n.value}{n.unit}</Text>
+                    </View>
+                    <Text style={styles.advancedNutrientExplanation}>{n.explanation}</Text>
+                  </View>
+                ))}
+                {advancedAnalysis.additives.length > 0 && (
+                  <View style={{ gap: 8 }}>
+                    <Text style={[styles.sectionTitle, { fontSize: 14 }]}>Aditivos detectados</Text>
+                    {advancedAnalysis.additives.map((ad) => (
+                      <View key={ad.code} style={[styles.advancedNutrient, RISK_COLORS[ad.risk_level] ? { backgroundColor: RISK_COLORS[ad.risk_level].bg, borderColor: RISK_COLORS[ad.risk_level].border, borderWidth: 1, borderRadius: 10, padding: 10 } : {}]}>
+                        <Text style={{ fontWeight: '700', fontSize: 13 }}>{ad.name} ({ad.code})</Text>
+                        <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4 }}>{ad.explanation}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ) : (
+              <ActivityIndicator style={{ marginTop: 12 }} color={Colors.primary} />
+            )
+          )}
+        </View>
 
         {/* Banner de sugerencia enviada */}
         {localSuggestion && (
@@ -1178,4 +1252,21 @@ const styles = StyleSheet.create({
   riskDotSmall: { width: 8, height: 8, borderRadius: 4 },
   additiveDropdownCode: { fontSize: 13, fontWeight: '700', color: Colors.text, minWidth: 44 },
   additiveDropdownName: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
+  // Premium
+  premiumSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  premiumBadge: { backgroundColor: '#F59E0B', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  premiumBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  healthAlert: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: 'flex-start' },
+  healthAlertHigh: { backgroundColor: '#F8D7DA', borderColor: '#F5C6CB' },
+  healthAlertMedium: { backgroundColor: '#FFF3CD', borderColor: '#FFEAA7' },
+  healthAlertLabel: { fontSize: 13, fontWeight: '700' },
+  healthAlertMsg: { fontSize: 12, lineHeight: 18 },
+  advancedSummary: { fontSize: 14, color: Colors.text, lineHeight: 21, fontStyle: 'italic', backgroundColor: '#F0FFF4', padding: 12, borderRadius: 10 },
+  advancedNutrient: { padding: 10, borderRadius: 10, borderWidth: 1, gap: 4 },
+  advancedHigh: { backgroundColor: '#F8D7DA', borderColor: '#F5C6CB' },
+  advancedMedium: { backgroundColor: '#FFF3CD', borderColor: '#FFEAA7' },
+  advancedLow: { backgroundColor: '#D4EDDA', borderColor: '#C3E6CB' },
+  advancedNutrientName: { fontSize: 13, fontWeight: '700', color: Colors.text },
+  advancedNutrientValue: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary },
+  advancedNutrientExplanation: { fontSize: 12, color: Colors.text, lineHeight: 18 },
 });
