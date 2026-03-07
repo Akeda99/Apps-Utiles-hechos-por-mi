@@ -16,6 +16,7 @@ type ProductStore = {
   isLoadingUser: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
+  googleLogin: (accessToken: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
 
@@ -43,6 +44,15 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   login: async (email, password) => {
     const data = await api.login(email, password);
+    await authStorage.saveToken(data.access_token);
+    set({ user: data.user });
+    await migrateLocalFavoritesToServer();
+    get().loadFavorites();
+    get().loadHistory();
+  },
+
+  googleLogin: async (accessToken) => {
+    const data = await api.googleLogin(accessToken);
     await authStorage.saveToken(data.access_token);
     set({ user: data.user });
     await migrateLocalFavoritesToServer();

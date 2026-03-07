@@ -6,7 +6,9 @@
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.nutriscanperu.app",
@@ -15,8 +17,23 @@
       }
     },
     "android": {
-      "permissions": ["android.permission.CAMERA"],
-      "package": "com.nutriscanperu.app"
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.nutriscanperu.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "com.googleusercontent.apps.32565345224-7jh9rlqmqickp8uhc1io2a5bvtf1hn9p"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
@@ -30,6 +47,12 @@
     "scheme": "nutriscan",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6ba031ec-bf72-4199-8f85-d1e68d8b4870"
+      }
     }
   }
 }

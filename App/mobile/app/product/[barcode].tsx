@@ -15,6 +15,7 @@ import { AlternativeCard } from '@/components/AlternativeCard';
 import { useProductStore } from '@/store/useProductStore';
 import { Colors, ScoreColors } from '@/constants/colors';
 import { api } from '@/services/api';
+import { storage } from '@/services/storage';
 import type { ScoreLabel } from '@/constants/colors';
 import type { Product, AdditiveDetail, DataQuality } from '@/services/api';
 
@@ -125,6 +126,12 @@ export default function ProductDetailScreen() {
   const [expandedAdditive, setExpandedAdditive] = useState<string | null>(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [suggestModalVisible, setSuggestModalVisible] = useState(false);
+  const [suggestSubmitting, setSuggestSubmitting] = useState(false);
+  const [suggestIngredients, setSuggestIngredients] = useState('');
+  const [suggestName, setSuggestName] = useState('');
+  const [suggestBrand, setSuggestBrand] = useState('');
+  const [suggestComment, setSuggestComment] = useState('');
   const [showNutrition, setShowNutrition] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
 
@@ -151,6 +158,46 @@ export default function ProductDetailScreen() {
       }
     })();
   }, [barcode]);
+
+  const openSuggestModal = () => {
+    setSuggestIngredients(product?.ingredients_text ?? '');
+    setSuggestName(product?.name ?? '');
+    setSuggestBrand(product?.brand ?? '');
+    setSuggestComment('');
+    setSuggestModalVisible(true);
+  };
+
+  const handleSuggest = async () => {
+    if (!product || !barcode) return;
+    const changes: Record<string, string> = {};
+    if (suggestIngredients.trim() && suggestIngredients.trim() !== (product.ingredients_text ?? ''))
+      changes.ingredients_text = suggestIngredients.trim();
+    if (suggestName.trim() && suggestName.trim() !== product.name)
+      changes.name = suggestName.trim();
+    if (suggestBrand.trim() && suggestBrand.trim() !== (product.brand ?? ''))
+      changes.brand = suggestBrand.trim();
+    if (!Object.keys(changes).length && !suggestComment.trim()) {
+      Alert.alert('Sin cambios', 'Modifica al menos un campo o agrega un comentario.');
+      return;
+    }
+    setSuggestSubmitting(true);
+    try {
+      await api.suggestProductEdit(barcode, changes, suggestComment.trim() || undefined);
+      await storage.addLocalSuggestion({
+        barcode,
+        product_name: product.name,
+        changes,
+        comment: suggestComment.trim() || undefined,
+        submitted_at: new Date().toISOString(),
+      });
+      setSuggestModalVisible(false);
+      Alert.alert('¡Gracias!', 'Tu sugerencia fue enviada y será revisada por nuestro equipo.');
+    } catch {
+      Alert.alert('Error', 'No se pudo enviar la sugerencia. Intenta nuevamente.');
+    } finally {
+      setSuggestSubmitting(false);
+    }
+  };
 
   const handleReport = async (reason: string) => {
     if (!barcode) return;
@@ -365,9 +412,13 @@ export default function ProductDetailScreen() {
           </View>
         )}
 
-        {/* Botón de reportar */}
+        {/* Botones de acción */}
         <View style={styles.section}>
-          <Pressable style={styles.reportButton} onPress={() => setReportModalVisible(true)}>
+          <Pressable style={styles.suggestButton} onPress={openSuggestModal}>
+            <Ionicons name="create-outline" size={16} color={Colors.primary} />
+            <Text style={styles.suggestButtonText}>Corregir información del producto</Text>
+          </Pressable>
+          <Pressable style={[styles.reportButton, { marginTop: 8 }]} onPress={() => setReportModalVisible(true)}>
             <Ionicons name="flag-outline" size={16} color={Colors.textSecondary} />
             <Text style={styles.reportButtonText}>Reportar información incorrecta</Text>
           </Pressable>
@@ -375,6 +426,73 @@ export default function ProductDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Modal de sugerencia */}
+      <Modal
+        visible={suggestModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSuggestModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setSuggestModalVisible(false)}>
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Corregir información</Text>
+            <Text style={styles.modalSubtitle}>Edita los campos incorrectos o vacíos</Text>
+
+            <Text style={styles.suggestLabel}>Nombre del producto</Text>
+            <TextInput
+              style={styles.suggestInput}
+              value={suggestName}
+              onChangeText={setSuggestName}
+              placeholder="Nombre del producto"
+              placeholderTextColor={Colors.textLight}
+            />
+
+            <Text style={styles.suggestLabel}>Marca</Text>
+            <TextInput
+              style={styles.suggestInput}
+              value={suggestBrand}
+              onChangeText={setSuggestBrand}
+              placeholder="Marca"
+              placeholderTextColor={Colors.textLight}
+            />
+
+            <Text style={styles.suggestLabel}>Ingredientes</Text>
+            <TextInput
+              style={[styles.suggestInput, styles.suggestInputMultiline]}
+              value={suggestIngredients}
+              onChangeText={setSuggestIngredients}
+              placeholder="Lista de ingredientes"
+              placeholderTextColor={Colors.textLight}
+              multiline
+              numberOfLines={4}
+            />
+
+            <Text style={styles.suggestLabel}>Comentario adicional</Text>
+            <TextInput
+              style={styles.suggestInput}
+              value={suggestComment}
+              onChangeText={setSuggestComment}
+              placeholder="Ej: La imagen está mal, el sodio es 450mg..."
+              placeholderTextColor={Colors.textLight}
+            />
+
+            <Pressable
+              style={[styles.suggestSubmitButton, suggestSubmitting && { opacity: 0.6 }]}
+              onPress={handleSuggest}
+              disabled={suggestSubmitting}
+            >
+              {suggestSubmitting
+                ? <ActivityIndicator color={Colors.white} />
+                : <Text style={styles.suggestSubmitText}>Enviar corrección</Text>
+              }
+            </Pressable>
+            <Pressable style={styles.cancelButton} onPress={() => setSuggestModalVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Modal de reporte */}
       <Modal
@@ -617,6 +735,18 @@ const styles = StyleSheet.create({
   additiveDetailText: { fontSize: 13, lineHeight: 20, marginTop: 4 },
   alternativesList: { gap: 12 },
   // Report
+  suggestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+  },
+  suggestButtonText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
   reportButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -661,4 +791,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cancelButtonText: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
+  suggestLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4, marginTop: 8 },
+  suggestInput: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.text,
+  },
+  suggestInputMultiline: { height: 90, textAlignVertical: 'top' },
+  suggestSubmitButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  suggestSubmitText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
 });

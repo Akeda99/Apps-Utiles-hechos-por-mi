@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput,
   Pressable, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 
 import { useProductStore } from '@/store/useProductStore';
 import { api } from '@/services/api';
 import { Colors } from '@/constants/colors';
+
+WebBrowser.maybeCompleteAuthSession();
 
 type Screen = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -26,7 +30,32 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { login, register } = useProductStore();
+  const { login, register, googleLogin } = useProductStore();
+
+  const [_req, googleResponse, promptAsync] = Google.useAuthRequest({
+    webClientId: '32565345224-9mf40u0j8f9n5dbcc8o5q7vvtqg1ggds.apps.googleusercontent.com',
+    androidClientId: '32565345224-7jh9rlqmqickp8uhc1io2a5bvtf1hn9p.apps.googleusercontent.com',
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type === 'success') {
+      const token = googleResponse.authentication?.accessToken;
+      if (token) handleGoogleLogin(token);
+    }
+  }, [googleResponse]);
+
+  const handleGoogleLogin = async (accessToken: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      await googleLogin(accessToken);
+      router.back();
+    } catch {
+      setError('Error al iniciar sesión con Google. Intenta nuevamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -188,6 +217,23 @@ export default function LoginScreen() {
               <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
             </Pressable>
           )}
+
+          {(screen === 'login' || screen === 'register') && (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>o</Text>
+                <View style={styles.dividerLine} />
+              </View>
+              <Pressable
+                style={styles.googleButton}
+                onPress={() => promptAsync()}
+                disabled={loading}
+              >
+                <Text style={styles.googleButtonText}>Continuar con Google</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         {(screen === 'login' || screen === 'register') && (
@@ -238,4 +284,16 @@ const styles = StyleSheet.create({
   submitText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
   forgotText: { color: Colors.textLight, fontSize: 14, textAlign: 'center', marginTop: 4 },
   switchText: { color: Colors.primary, fontSize: 15, textAlign: 'center', marginTop: 16 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerText: { color: Colors.textLight, fontSize: 13 },
+  googleButton: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  googleButtonText: { color: Colors.text, fontSize: 15, fontWeight: '600' },
 });

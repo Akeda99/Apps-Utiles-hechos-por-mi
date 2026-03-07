@@ -1,11 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Product } from './api';
 
-const HISTORY_KEY   = 'scan_history_local';
-const FAVORITES_KEY = 'favorites_local';
+const HISTORY_KEY     = 'scan_history_local';
+const FAVORITES_KEY   = 'favorites_local';
+const SUGGESTIONS_KEY = 'product_suggestions_local';
 const MAX_LOCAL_HISTORY = 50;
 
 export type LocalHistoryItem = Product & { scanned_at: string };
+
+export type LocalSuggestion = {
+  barcode: string;
+  product_name: string;
+  changes: Record<string, string>;
+  comment?: string;
+  submitted_at: string;
+};
 
 export const storage = {
   // ── Historial ────────────────────────────────────────────────────────────
@@ -59,5 +68,16 @@ export const storage = {
 
   async clearLocalFavorites(): Promise<void> {
     await AsyncStorage.removeItem(FAVORITES_KEY);
+  },
+
+  // ── Sugerencias enviadas ─────────────────────────────────────────────────
+  async getLocalSuggestions(): Promise<LocalSuggestion[]> {
+    const raw = await AsyncStorage.getItem(SUGGESTIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  },
+
+  async addLocalSuggestion(suggestion: LocalSuggestion): Promise<void> {
+    const list = await storage.getLocalSuggestions();
+    await AsyncStorage.setItem(SUGGESTIONS_KEY, JSON.stringify([suggestion, ...list]));
   },
 };

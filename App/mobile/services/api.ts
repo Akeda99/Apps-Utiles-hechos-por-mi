@@ -139,9 +139,15 @@ export const api = {
   reportProduct: (barcode: string, reason: string, comment?: string) =>
     apiClient.post(`/reports/${barcode}`, { reason, comment }).then((r) => r.data),
 
+  googleLogin: (access_token: string) =>
+    apiClient.post('/users/google-login', { access_token }).then((r) => r.data),
+
   forgotPassword: (email: string) =>
     apiClient.post('/users/forgot-password', { email }).then((r) => r.data),
 
   resetPassword: (token: string, new_password: string) =>
     apiClient.post('/users/reset-password', { token, new_password }).then((r) => r.data),
+
+  suggestProductEdit: (barcode: string, changes: Record<string, string>, comment?: string) =>
+    apiClient.post('/suggestions/', { barcode, changes, comment }).then((r) => r.data),
 };
