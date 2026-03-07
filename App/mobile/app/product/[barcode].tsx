@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  ActivityIndicator, Pressable, Alert, Modal,
+  ActivityIndicator, Pressable, Alert, Modal, TextInput,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Image } from 'expo-image';
@@ -132,6 +132,18 @@ export default function ProductDetailScreen() {
   const [suggestName, setSuggestName] = useState('');
   const [suggestBrand, setSuggestBrand] = useState('');
   const [suggestComment, setSuggestComment] = useState('');
+  const [suggestAdditivesList, setSuggestAdditivesList] = useState<string[]>([]);
+  const [suggestAdditiveInput, setSuggestAdditiveInput] = useState('');
+  const [additiveSearchResults, setAdditiveSearchResults] = useState<{ e_number: string; name: string; risk_level: string }[]>([]);
+  const [suggestEnergy, setSuggestEnergy] = useState('');
+  const [suggestProtein, setSuggestProtein] = useState('');
+  const [suggestFat, setSuggestFat] = useState('');
+  const [suggestFatSat, setSuggestFatSat] = useState('');
+  const [suggestFatTrans, setSuggestFatTrans] = useState('');
+  const [suggestCarbs, setSuggestCarbs] = useState('');
+  const [suggestSugars, setSuggestSugars] = useState('');
+  const [suggestFiber, setSuggestFiber] = useState('');
+  const [suggestSodium, setSuggestSodium] = useState('');
   const [showNutrition, setShowNutrition] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
 
@@ -164,6 +176,17 @@ export default function ProductDetailScreen() {
     setSuggestName(product?.name ?? '');
     setSuggestBrand(product?.brand ?? '');
     setSuggestComment('');
+    setSuggestAdditivesList(product?.additives ?? []);
+    setSuggestAdditiveInput('');
+    setSuggestEnergy(String(product?.energy_kcal ?? ''));
+    setSuggestProtein(String(product?.protein ?? ''));
+    setSuggestFat(String(product?.fat_total ?? ''));
+    setSuggestFatSat(String(product?.fat_saturated ?? ''));
+    setSuggestFatTrans(String(product?.fat_trans ?? ''));
+    setSuggestCarbs(String(product?.carbohydrates ?? ''));
+    setSuggestSugars(String(product?.sugars ?? ''));
+    setSuggestFiber(String(product?.fiber ?? ''));
+    setSuggestSodium(String(product?.sodium_mg ?? ''));
     setSuggestModalVisible(true);
   };
 
@@ -176,6 +199,23 @@ export default function ProductDetailScreen() {
       changes.name = suggestName.trim();
     if (suggestBrand.trim() && suggestBrand.trim() !== (product.brand ?? ''))
       changes.brand = suggestBrand.trim();
+    const nutrientMap: [string, string, number][] = [
+      ['energy_kcal', suggestEnergy, product.energy_kcal],
+      ['protein', suggestProtein, product.protein],
+      ['fat_total', suggestFat, product.fat_total],
+      ['fat_saturated', suggestFatSat, product.fat_saturated],
+      ['fat_trans', suggestFatTrans, product.fat_trans],
+      ['carbohydrates', suggestCarbs, product.carbohydrates],
+      ['sugars', suggestSugars, product.sugars],
+      ['fiber', suggestFiber, product.fiber],
+      ['sodium_mg', suggestSodium, product.sodium_mg],
+    ];
+    for (const [key, val, orig] of nutrientMap) {
+      if (val.trim() !== '' && val.trim() !== String(orig ?? '')) changes[key] = val.trim();
+    }
+    const origAdditives = [...(product.additives ?? [])].sort().join(',');
+    const newAdditives = [...suggestAdditivesList].sort().join(',');
+    if (origAdditives !== newAdditives) changes.additives = JSON.stringify(suggestAdditivesList);
     if (!Object.keys(changes).length && !suggestComment.trim()) {
       Alert.alert('Sin cambios', 'Modifica al menos un campo o agrega un comentario.');
       return;
@@ -192,8 +232,9 @@ export default function ProductDetailScreen() {
       });
       setSuggestModalVisible(false);
       Alert.alert('¡Gracias!', 'Tu sugerencia fue enviada y será revisada por nuestro equipo.');
-    } catch {
-      Alert.alert('Error', 'No se pudo enviar la sugerencia. Intenta nuevamente.');
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail ?? e?.message ?? JSON.stringify(e);
+      Alert.alert('Error detalle', `${msg}`);
     } finally {
       setSuggestSubmitting(false);
     }
@@ -435,61 +476,154 @@ export default function ProductDetailScreen() {
         onRequestClose={() => setSuggestModalVisible(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setSuggestModalVisible(false)}>
-          <Pressable style={styles.modalContent} onPress={() => {}}>
-            <Text style={styles.modalTitle}>Corregir información</Text>
-            <Text style={styles.modalSubtitle}>Edita los campos incorrectos o vacíos</Text>
+          <Pressable style={[styles.modalContent, { maxHeight: '92%', padding: 0 }]} onPress={() => {}}>
+            <View style={{ padding: 24, paddingBottom: 0 }}>
+              <Text style={styles.modalTitle}>Corregir información</Text>
+              <Text style={styles.modalSubtitle}>Edita los campos incorrectos o vacíos</Text>
+            </View>
 
-            <Text style={styles.suggestLabel}>Nombre del producto</Text>
-            <TextInput
-              style={styles.suggestInput}
-              value={suggestName}
-              onChangeText={setSuggestName}
-              placeholder="Nombre del producto"
-              placeholderTextColor={Colors.textLight}
-            />
+            <ScrollView style={{ paddingHorizontal: 24 }} keyboardShouldPersistTaps="handled">
+              {/* Nombre y marca */}
+              <Text style={styles.suggestLabel}>Nombre del producto</Text>
+              <TextInput
+                style={styles.suggestInput}
+                value={suggestName}
+                onChangeText={setSuggestName}
+                placeholder="Nombre del producto"
+                placeholderTextColor={Colors.textLight}
+              />
+              <Text style={styles.suggestLabel}>Marca</Text>
+              <TextInput
+                style={styles.suggestInput}
+                value={suggestBrand}
+                onChangeText={setSuggestBrand}
+                placeholder="Marca"
+                placeholderTextColor={Colors.textLight}
+              />
 
-            <Text style={styles.suggestLabel}>Marca</Text>
-            <TextInput
-              style={styles.suggestInput}
-              value={suggestBrand}
-              onChangeText={setSuggestBrand}
-              placeholder="Marca"
-              placeholderTextColor={Colors.textLight}
-            />
+              {/* Nutrición */}
+              <Text style={[styles.suggestLabel, { marginTop: 16, fontSize: 14, color: Colors.text }]}>
+                Información nutricional (por 100g/ml)
+              </Text>
+              <View style={styles.nutriGrid}>
+                {([
+                  ['Calorías (kcal)', suggestEnergy, setSuggestEnergy],
+                  ['Proteínas (g)', suggestProtein, setSuggestProtein],
+                  ['Grasas totales (g)', suggestFat, setSuggestFat],
+                  ['Grasas sat. (g)', suggestFatSat, setSuggestFatSat],
+                  ['Grasas trans (g)', suggestFatTrans, setSuggestFatTrans],
+                  ['Carbohidratos (g)', suggestCarbs, setSuggestCarbs],
+                  ['Azúcares (g)', suggestSugars, setSuggestSugars],
+                  ['Fibra (g)', suggestFiber, setSuggestFiber],
+                  ['Sodio (mg)', suggestSodium, setSuggestSodium],
+                ] as [string, string, (v: string) => void][]).map(([label, val, setter]) => (
+                  <View key={label} style={styles.nutriCell}>
+                    <Text style={styles.nutriCellLabel}>{label}</Text>
+                    <TextInput
+                      style={styles.suggestInput}
+                      value={val}
+                      onChangeText={setter}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor={Colors.textLight}
+                    />
+                  </View>
+                ))}
+              </View>
 
-            <Text style={styles.suggestLabel}>Ingredientes</Text>
-            <TextInput
-              style={[styles.suggestInput, styles.suggestInputMultiline]}
-              value={suggestIngredients}
-              onChangeText={setSuggestIngredients}
-              placeholder="Lista de ingredientes"
-              placeholderTextColor={Colors.textLight}
-              multiline
-              numberOfLines={4}
-            />
+              {/* Aditivos */}
+              <Text style={[styles.suggestLabel, { marginTop: 16, fontSize: 14, color: Colors.text }]}>
+                Aditivos (códigos E)
+              </Text>
+              <View style={styles.additivesChips}>
+                {suggestAdditivesList.map((code) => (
+                  <Pressable
+                    key={code}
+                    style={styles.additiveChip}
+                    onPress={() => setSuggestAdditivesList(suggestAdditivesList.filter((c) => c !== code))}
+                  >
+                    <Text style={styles.additiveChipText}>{code}</Text>
+                    <Ionicons name="close" size={12} color={Colors.primary} />
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                style={styles.suggestInput}
+                value={suggestAdditiveInput}
+                onChangeText={async (text) => {
+                  setSuggestAdditiveInput(text);
+                  if (text.trim().length >= 1) {
+                    try {
+                      const results = await api.searchAdditives(text.trim());
+                      setAdditiveSearchResults(results.filter((r) => !suggestAdditivesList.includes(r.e_number)));
+                    } catch { setAdditiveSearchResults([]); }
+                  } else {
+                    setAdditiveSearchResults([]);
+                  }
+                }}
+                placeholder="Buscar aditivo (ej: E102 o Tartrazina)"
+                placeholderTextColor={Colors.textLight}
+              />
+              {additiveSearchResults.length > 0 && (
+                <View style={styles.additiveDropdown}>
+                  {additiveSearchResults.map((item) => (
+                    <Pressable
+                      key={item.e_number}
+                      style={styles.additiveDropdownItem}
+                      onPress={() => {
+                        setSuggestAdditivesList([...suggestAdditivesList, item.e_number]);
+                        setSuggestAdditiveInput('');
+                        setAdditiveSearchResults([]);
+                      }}
+                    >
+                      <View style={[styles.riskDotSmall, {
+                        backgroundColor: item.risk_level === 'red' ? '#dc3545' : item.risk_level === 'yellow' ? '#f0ad4e' : '#28a745'
+                      }]} />
+                      <Text style={styles.additiveDropdownCode}>{item.e_number}</Text>
+                      <Text style={styles.additiveDropdownName} numberOfLines={1}>{item.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
 
-            <Text style={styles.suggestLabel}>Comentario adicional</Text>
-            <TextInput
-              style={styles.suggestInput}
-              value={suggestComment}
-              onChangeText={setSuggestComment}
-              placeholder="Ej: La imagen está mal, el sodio es 450mg..."
-              placeholderTextColor={Colors.textLight}
-            />
+              {/* Ingredientes */}
+              <Text style={[styles.suggestLabel, { marginTop: 16 }]}>Ingredientes</Text>
+              <TextInput
+                style={[styles.suggestInput, styles.suggestInputMultiline]}
+                value={suggestIngredients}
+                onChangeText={setSuggestIngredients}
+                placeholder="Lista de ingredientes"
+                placeholderTextColor={Colors.textLight}
+                multiline
+                numberOfLines={4}
+              />
 
-            <Pressable
-              style={[styles.suggestSubmitButton, suggestSubmitting && { opacity: 0.6 }]}
-              onPress={handleSuggest}
-              disabled={suggestSubmitting}
-            >
-              {suggestSubmitting
-                ? <ActivityIndicator color={Colors.white} />
-                : <Text style={styles.suggestSubmitText}>Enviar corrección</Text>
-              }
-            </Pressable>
-            <Pressable style={styles.cancelButton} onPress={() => setSuggestModalVisible(false)}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </Pressable>
+              {/* Comentario */}
+              <Text style={styles.suggestLabel}>Comentario adicional</Text>
+              <TextInput
+                style={styles.suggestInput}
+                value={suggestComment}
+                onChangeText={setSuggestComment}
+                placeholder="Ej: La imagen está mal, el sodio es 450mg..."
+                placeholderTextColor={Colors.textLight}
+              />
+              <View style={{ height: 16 }} />
+            </ScrollView>
+
+            <View style={{ padding: 24, paddingTop: 12, gap: 8 }}>
+              <Pressable
+                style={[styles.suggestSubmitButton, suggestSubmitting && { opacity: 0.6 }]}
+                onPress={handleSuggest}
+                disabled={suggestSubmitting}
+              >
+                {suggestSubmitting
+                  ? <ActivityIndicator color={Colors.white} />
+                  : <Text style={styles.suggestSubmitText}>Enviar corrección</Text>
+                }
+              </Pressable>
+              <Pressable style={styles.cancelButton} onPress={() => setSuggestModalVisible(false)}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </Pressable>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -811,4 +945,42 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   suggestSubmitText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+  nutriGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
+  nutriCell: { width: '47%' },
+  nutriCellLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 4 },
+  additivesChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8, marginBottom: 8 },
+  additiveChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+  },
+  additiveChipText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  additiveInputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  additiveInputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  additiveDropdown: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  additiveDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  riskDotSmall: { width: 8, height: 8, borderRadius: 4 },
+  additiveDropdownCode: { fontSize: 13, fontWeight: '700', color: Colors.text, minWidth: 44 },
+  additiveDropdownName: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
 });
