@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "NutriScan Peru",
+    "slug": "nutriscan-peru",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.nutriscanperu.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para escanear códigos de barras de productos."
+      }
+    },
+    "android": {
+      "permissions": ["android.permission.CAMERA"],
+      "package": "com.nutriscanperu.app"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Necesitamos acceso a la cámara para escanear códigos de barras."
+        }
+      ]
+    ],
+    "scheme": "nutriscan",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -1,0 +1,147 @@
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+
+const BASE_URL = 'https://nutriscan-backend-production-d2d6.up.railway.app';
+
+export const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 12000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Interceptor para agregar el token JWT automáticamente
+apiClient.interceptors.request.use(async (config) => {
+  const token = await SecureStore.getItemAsync('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ── Tipos ─────────────────────────────────────────────────────────────────────
+
+export type ScoreLabel = 'green' | 'yellow' | 'red';
+
+export type Product = {
+  id: string;
+  barcode: string;
+  name: string;
+  brand: string | null;
+  categories: string[];
+  image_url: string | null;
+  energy_kcal: number;
+  fat_total: number;
+  fat_saturated: number;
+  fat_trans: number;
+  carbohydrates: number;
+  sugars: number;
+  fiber: number;
+  protein: number;
+  sodium_mg: number;
+  ingredients_text: string | null;
+  additives: string[];
+  allergens: string[];
+  health_score: number | null;
+  score_label: ScoreLabel;
+  score_details: {
+    score: number;
+    label: ScoreLabel;
+    explanation: string;
+    warnings: string[];
+    breakdown: { negative_points: number; positive_points: number };
+  } | null;
+  warnings: string[];
+  source: string;
+  verified: boolean;
+  is_liquid: boolean;
+};
+
+export type AdditiveDetail = {
+  name: string;
+  e_number: string;
+  type: string;
+  description: string;
+  possible_health_effects: string;
+  risk_level: 'green' | 'yellow' | 'red';
+};
+
+export type DataQuality = {
+  is_suspicious: boolean;
+  issues: string[];
+  confidence: 'high' | 'medium' | 'low';
+};
+
+export type ScanResult = {
+  product: Product;
+  alternatives: Product[];
+  additive_details: AdditiveDetail[];
+  data_quality: DataQuality;
+};
+
+export type User = {
+  id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  premium: boolean;
+  premium_until: string | null;
+  contribution_count: number;
+};
+
+export type HistoryItem = Product & {
+  scanned_at: string;
+};
+
+// ── API calls ─────────────────────────────────────────────────────────────────
+
+export const api = {
+  scan: (barcode: string): Promise<ScanResult> =>
+    apiClient.get(`/scan/${barcode}`).then((r) => r.data),
+
+  getProduct: (barcode: string): Promise<Product> =>
+    apiClient.get(`/products/${barcode}`).then((r) => r.data),
+
+  searchProducts: (q: string) =>
+    apiClient.get('/products/', { params: { q } }).then((r) => r.data),
+
+  login: (email: string, password: string) => {
+    const form = new URLSearchParams();
+    form.append('username', email);
+    form.append('password', password);
+    return apiClient
+      .post('/users/login', form.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      })
+      .then((r) => r.data);
+  },
+
+  register: (email: string, password: string, display_name?: string) =>
+    apiClient.post('/users/register', { email, password, display_name }).then((r) => r.data),
+
+  getMe: (): Promise<User> =>
+    apiClient.get('/users/me').then((r) => r.data),
+
+  getHistory: (page = 1) =>
+    apiClient.get('/users/me/history', { params: { page } }).then((r) => r.data),
+
+  getFavorites: (): Promise<Product[]> =>
+    apiClient.get('/users/me/favorites').then((r) => r.data),
+
+  addFavorite: (productId: string) =>
+    apiClient.post(`/users/me/favorites/${productId}`).then((r) => r.data),
+
+  removeFavorite: (productId: string) =>
+    apiClient.delete(`/users/me/favorites/${productId}`),
+
+  contribute: (data: Record<string, unknown>) =>
+    apiClient.post('/contributions/', data).then((r) => r.data),
+
+  reportProduct: (barcode: string, reason: string, comment?: string) =>
+    apiClient.post(`/reports/${barcode}`, { reason, comment }).then((r) => r.data),
+
+  forgotPassword: (email: string) =>
+    apiClient.post('/users/forgot-password', { email }).then((r) => r.data),
+
+  resetPassword: (token: string, new_password: string) =>
+    apiClient.post('/users/reset-password', { token, new_password }).then((r) => r.data),
+};
