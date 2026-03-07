@@ -27,6 +27,7 @@ type ProductStore = {
   history: LocalHistoryItem[];
   isLoadingHistory: boolean;
   loadHistory: () => Promise<void>;
+  refreshHistoryItem: (product: Product) => Promise<void>;
 
   // Favorites
   favorites: Product[];
@@ -137,6 +138,15 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     } finally {
       set({ isLoadingHistory: false });
     }
+  },
+
+  refreshHistoryItem: async (product) => {
+    await storage.refreshLocalHistoryItem(product);
+    set((state) => ({
+      history: state.history.map((h) =>
+        h.barcode === product.barcode ? { ...h, ...product } : h
+      ),
+    }));
   },
 
   // ── Favorites ─────────────────────────────────────────────────────────────

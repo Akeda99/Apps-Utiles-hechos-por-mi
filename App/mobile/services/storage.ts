@@ -33,6 +33,14 @@ export const storage = {
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
   },
 
+  async refreshLocalHistoryItem(product: Product): Promise<void> {
+    const history = await storage.getLocalHistory();
+    const idx = history.findIndex((h) => h.barcode === product.barcode);
+    if (idx === -1) return;
+    history[idx] = { ...history[idx], ...product };
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  },
+
   async clearLocalHistory(): Promise<void> {
     await AsyncStorage.removeItem(HISTORY_KEY);
   },
@@ -78,6 +86,12 @@ export const storage = {
 
   async addLocalSuggestion(suggestion: LocalSuggestion): Promise<void> {
     const list = await storage.getLocalSuggestions();
-    await AsyncStorage.setItem(SUGGESTIONS_KEY, JSON.stringify([suggestion, ...list]));
+    const filtered = list.filter((s) => s.barcode !== suggestion.barcode);
+    await AsyncStorage.setItem(SUGGESTIONS_KEY, JSON.stringify([suggestion, ...filtered]));
+  },
+
+  async removeLocalSuggestion(barcode: string): Promise<void> {
+    const list = await storage.getLocalSuggestions();
+    await AsyncStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(list.filter((s) => s.barcode !== barcode)));
   },
 };

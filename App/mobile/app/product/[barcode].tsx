@@ -49,6 +49,74 @@ const ADDITIVE_TYPE_LABELS: Record<string, string> = {
   desconocido: 'Aditivo',
 };
 
+const PERU_THRESHOLDS = {
+  solid:  { sugars: { high: 22.5, medium: 12.5 }, fat_saturated: { high: 6.0, medium: 3.0 }, sodium_mg: { high: 800, medium: 400 }, energy_kcal: { high: 400, medium: 200 } },
+  liquid: { sugars: { high: 6.0,  medium: 3.0  }, fat_saturated: { high: 3.0, medium: 1.5 }, sodium_mg: { high: 300, medium: 150 }, energy_kcal: { high: 70,  medium: 35  } },
+};
+
+function computeWarnings(product: Product, details: AdditiveDetail[]): string[] {
+  const t = PERU_THRESHOLDS[product.is_liquid ? 'liquid' : 'solid'];
+  const w: string[] = [];
+  if ((product.sugars ?? 0) >= t.sugars.high) w.push('alto_en_azucar');
+  if ((product.fat_saturated ?? 0) >= t.fat_saturated.high) w.push('alto_en_grasas_saturadas');
+  if ((product.sodium_mg ?? 0) >= t.sodium_mg.high) w.push('alto_en_sodio');
+  if ((product.fat_trans ?? 0) > 0.5) w.push('contiene_grasas_trans');
+  if (details.some((d) => d.risk_level === 'red')) w.push('contiene_aditivos_riesgo');
+  if (details.some((d) => d.risk_level === 'yellow')) w.push('contiene_aditivos_precaucion');
+  if ((product.energy_kcal ?? 0) >= t.energy_kcal.high) w.push('alto_en_calorias');
+  return w;
+}
+
+function computeHealthScore(product: Product, details: AdditiveDetail[]): { score: number; label: 'green' | 'yellow' | 'red'; explanation: string } {
+  const t = PERU_THRESHOLDS[product.is_liquid ? 'liquid' : 'solid'];
+  let neg = 0;
+  let pos = 0;
+
+  // Negativos nutricionales
+  const sugars = product.sugars ?? 0;
+  if (sugars >= t.sugars.high) neg -= 20;
+  else if (sugars >= t.sugars.medium) neg -= 10;
+
+  const fatSat = product.fat_saturated ?? 0;
+  if (fatSat >= t.fat_saturated.high) neg -= 15;
+  else if (fatSat >= t.fat_saturated.medium) neg -= 7;
+
+  const sodium = product.sodium_mg ?? 0;
+  if (sodium >= t.sodium_mg.high) neg -= 15;
+  else if (sodium >= t.sodium_mg.medium) neg -= 7;
+
+  if ((product.fat_trans ?? 0) > 0.5) neg -= 10;
+
+  const kcal = product.energy_kcal ?? 0;
+  if (kcal >= t.energy_kcal.high) neg -= 5;
+
+  // Aditivos
+  const redCount = details.filter((d) => d.risk_level === 'red').length;
+  const yellowCount = details.filter((d) => d.risk_level === 'yellow').length;
+  neg -= Math.min(yellowCount * 25, 75);
+
+  // Positivos
+  const protein = product.protein ?? 0;
+  if (protein >= 10) pos += 20;
+  else if (protein >= 5) pos += 10;
+
+  const fiber = product.fiber ?? 0;
+  if (fiber >= 3) pos += 10;
+  else if (fiber >= 1.5) pos += 5;
+
+  let score = Math.max(0, Math.min(100, 100 + neg + pos));
+  if (redCount > 0) score = 0;
+
+  const label: 'green' | 'yellow' | 'red' = score >= 70 ? 'green' : score >= 40 ? 'yellow' : 'red';
+  const explanation = score >= 70
+    ? 'Este producto tiene un buen perfil nutricional.'
+    : score >= 40
+      ? 'Consume este producto con moderación.'
+      : 'Este producto no es recomendable para consumo frecuente.';
+
+  return { score, label, explanation };
+}
+
 const REPORT_REASONS = [
   { value: 'nutricion_incorrecta', label: 'Información nutricional incorrecta' },
   { value: 'ingredientes_incorrectos', label: 'Ingredientes incorrectos' },
@@ -115,7 +183,7 @@ function buildQuickSummary(
 
 export default function ProductDetailScreen() {
   const { barcode } = useLocalSearchParams<{ barcode: string }>();
-  const { scanProduct, addFavorite, removeFavorite, isFavorite } = useProductStore();
+  const { scanProduct, addFavorite, removeFavorite, isFavorite, refreshHistoryItem } = useProductStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [alternatives, setAlternatives] = useState<Product[]>([]);
@@ -146,28 +214,103 @@ export default function ProductDetailScreen() {
   const [suggestSodium, setSuggestSodium] = useState('');
   const [showNutrition, setShowNutrition] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
+  const [localSuggestion, setLocalSuggestion] = useState<import('@/services/storage').LocalSuggestion | null>(null);
 
   const isFav = product ? isFavorite(product.id) : false;
 
   useEffect(() => {
     if (!barcode) return;
     (async () => {
+      let scanResult: { product: Product; alternatives: Product[]; additive_details: AdditiveDetail[]; data_quality: DataQuality | null } | null = null;
       try {
-        const result = await scanProduct(barcode);
-        setProduct(result.product);
-        setAlternatives(result.alternatives || []);
-        setAdditiveDetails(result.additive_details || []);
-        setDataQuality(result.data_quality || null);
+        scanResult = await scanProduct(barcode);
+        setProduct(scanResult.product);
+        setAlternatives(scanResult.alternatives || []);
+        setAdditiveDetails(scanResult.additive_details || []);
+        setDataQuality(scanResult.data_quality || null);
       } catch (e: any) {
         const detail = e?.response?.data?.detail;
-        if (detail?.can_contribute) {
-          setError('not_found');
-        } else {
-          setError('error');
-        }
+        setError(detail?.can_contribute ? 'not_found' : 'error');
       } finally {
         setLoading(false);
       }
+
+      const suggestions = await storage.getLocalSuggestions();
+      const found = suggestions.find((s) => s.barcode === barcode);
+      setLocalSuggestion(found ?? null);
+
+      if (!found?.changes || !scanResult) return;
+
+      // Si todos los cambios sugeridos ya coinciden con los datos del servidor,
+      // la sugerencia fue aprobada → limpiar banner local
+      const numFields = ['energy_kcal', 'protein', 'fat_total', 'fat_saturated', 'fat_trans', 'carbohydrates', 'sugars', 'fiber', 'sodium_mg'];
+      let allApplied = true;
+      for (const [key, val] of Object.entries(found.changes)) {
+        const serverVal = (scanResult.product as any)[key];
+        if (key === 'additives') {
+          const serverStr = [...(scanResult.product.additives ?? [])].sort().join(',');
+          const suggestedStr = [...(JSON.parse(val as string) as string[])].sort().join(',');
+          if (serverStr !== suggestedStr) { allApplied = false; break; }
+        } else if (numFields.includes(key)) {
+          if (Math.abs(parseFloat(serverVal ?? 0) - parseFloat(val as string)) > 0.01) { allApplied = false; break; }
+        } else {
+          if (serverVal !== val) { allApplied = false; break; }
+        }
+      }
+      if (allApplied) {
+        await storage.removeLocalSuggestion(barcode);
+        setLocalSuggestion(null);
+        return;
+      }
+
+      const c = found.changes;
+
+      // Aplicar cambios locales sobre los datos del scan
+      let mergedProduct: Product = { ...scanResult.product };
+      for (const key of numFields) {
+        if (c[key] !== undefined) (mergedProduct as any)[key] = parseFloat(c[key]);
+      }
+      if (c.name) mergedProduct.name = c.name;
+      if (c.brand) mergedProduct.brand = c.brand;
+      if (c.ingredients_text) mergedProduct.ingredients_text = c.ingredients_text;
+
+      let mergedDetails: AdditiveDetail[] = [...(scanResult.additive_details || [])];
+
+      if (c.additives) {
+        const newAdditives: string[] = JSON.parse(c.additives);
+        mergedProduct.additives = newAdditives;
+        mergedDetails = mergedDetails.filter((d) => newAdditives.includes(d.e_number));
+        const existingCodes = mergedDetails.map((d) => d.e_number);
+        const toFetch = newAdditives.filter((code) => !existingCodes.includes(code));
+        if (toFetch.length > 0) {
+          const fetched = await Promise.all(toFetch.map((code) => api.searchAdditives(code)));
+          const newDetails: AdditiveDetail[] = fetched.flat().map((r) => ({
+            name: r.name,
+            e_number: r.e_number,
+            type: r.type || 'desconocido',
+            description: r.description || '',
+            possible_health_effects: r.possible_health_effects || '',
+            risk_level: r.risk_level as AdditiveDetail['risk_level'],
+          }));
+          mergedDetails = [...mergedDetails, ...newDetails];
+        }
+      }
+
+      // Recalcular health score y advertencias con todos los valores corregidos
+      const { score: newScore, label: newLabel, explanation: newExplanation } = computeHealthScore(mergedProduct, mergedDetails);
+      mergedProduct.health_score = newScore;
+      mergedProduct.score_label = newLabel;
+      if (mergedProduct.score_details) {
+        mergedProduct.score_details = { ...mergedProduct.score_details, score: newScore, label: newLabel, explanation: newExplanation };
+      }
+      mergedProduct.warnings = computeWarnings(mergedProduct, mergedDetails);
+
+      setProduct(mergedProduct);
+      setAdditiveDetails(mergedDetails);
+
+      // Sincronizar historial y favoritos locales con los datos corregidos
+      await refreshHistoryItem(mergedProduct);
+      await storage.refreshLocalFavorite(mergedProduct);
     })();
   }, [barcode]);
 
@@ -216,20 +359,26 @@ export default function ProductDetailScreen() {
     const origAdditives = [...(product.additives ?? [])].sort().join(',');
     const newAdditives = [...suggestAdditivesList].sort().join(',');
     if (origAdditives !== newAdditives) changes.additives = JSON.stringify(suggestAdditivesList);
-    if (!Object.keys(changes).length && !suggestComment.trim()) {
+
+    // Fusionar con la corrección anterior para no perder cambios previos
+    const mergedChanges = { ...(localSuggestion?.changes ?? {}), ...changes };
+
+    if (!Object.keys(mergedChanges).length && !suggestComment.trim()) {
       Alert.alert('Sin cambios', 'Modifica al menos un campo o agrega un comentario.');
       return;
     }
     setSuggestSubmitting(true);
     try {
-      await api.suggestProductEdit(barcode, changes, suggestComment.trim() || undefined);
-      await storage.addLocalSuggestion({
+      await api.suggestProductEdit(barcode, mergedChanges, suggestComment.trim() || undefined);
+      const newSuggestion = {
         barcode,
         product_name: product.name,
-        changes,
+        changes: mergedChanges,
         comment: suggestComment.trim() || undefined,
         submitted_at: new Date().toISOString(),
-      });
+      };
+      await storage.addLocalSuggestion(newSuggestion);
+      setLocalSuggestion(newSuggestion);
       setSuggestModalVisible(false);
       Alert.alert('¡Gracias!', 'Tu sugerencia fue enviada y será revisada por nuestro equipo.');
     } catch (e: any) {
@@ -450,6 +599,39 @@ export default function ProductDetailScreen() {
                 <AlternativeCard key={alt.id} product={alt} />
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Banner de sugerencia enviada */}
+        {localSuggestion && (
+          <View style={styles.suggestionBanner}>
+            <View style={styles.suggestionBannerHeader}>
+              <Ionicons name="checkmark-circle" size={16} color="#155724" />
+              <Text style={styles.suggestionBannerTitle}>Corrección enviada · pendiente de revisión</Text>
+            </View>
+            <Text style={styles.suggestionBannerDate}>
+              {new Date(localSuggestion.submitted_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </Text>
+            {Object.entries(localSuggestion.changes).map(([key, val]) => {
+              const labels: Record<string, string> = {
+                name: 'Nombre', brand: 'Marca', ingredients_text: 'Ingredientes',
+                energy_kcal: 'Calorías', protein: 'Proteínas', fat_total: 'Grasas totales',
+                fat_saturated: 'Grasas sat.', fat_trans: 'Grasas trans',
+                carbohydrates: 'Carbohidratos', sugars: 'Azúcares',
+                fiber: 'Fibra', sodium_mg: 'Sodio', additives: 'Aditivos',
+              };
+              return (
+                <Text key={key} style={styles.suggestionBannerChange}>
+                  <Text style={{ fontWeight: '700' }}>{labels[key] ?? key}: </Text>
+                  {key === 'additives' ? JSON.parse(val).join(', ') : val}
+                </Text>
+              );
+            })}
+            {localSuggestion.comment ? (
+              <Text style={styles.suggestionBannerChange}>
+                <Text style={{ fontWeight: '700' }}>Comentario: </Text>{localSuggestion.comment}
+              </Text>
+            ) : null}
           </View>
         )}
 
@@ -945,6 +1127,20 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   suggestSubmitText: { color: Colors.white, fontSize: 15, fontWeight: '700' },
+  suggestionBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: '#D4EDDA',
+    borderWidth: 1,
+    borderColor: '#C3E6CB',
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
+  },
+  suggestionBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  suggestionBannerTitle: { fontSize: 13, fontWeight: '700', color: '#155724', flex: 1 },
+  suggestionBannerDate: { fontSize: 12, color: '#155724', opacity: 0.7, marginBottom: 4 },
+  suggestionBannerChange: { fontSize: 13, color: '#155724', lineHeight: 20 },
   nutriGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
   nutriCell: { width: '47%' },
   nutriCellLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 4 },
@@ -961,7 +1157,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   additiveChipText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  additiveInputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   additiveInputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   additiveDropdown: {
     backgroundColor: Colors.surface,

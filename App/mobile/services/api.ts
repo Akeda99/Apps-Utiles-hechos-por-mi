@@ -151,6 +151,6 @@ export const api = {
   suggestProductEdit: (barcode: string, changes: Record<string, string>, comment?: string) =>
     apiClient.post('/suggestions/', { barcode, changes, comment }).then((r) => r.data),
 
-  searchAdditives: (q: string): Promise<{ e_number: string; name: string; risk_level: string }[]> =>
+  searchAdditives: (q: string): Promise<{ e_number: string; name: string; risk_level: string; type: string; description: string; possible_health_effects: string }[]> =>
     apiClient.get('/products/additives/search', { params: { q } }).then((r) => r.data),
 };
