@@ -639,8 +639,11 @@ export default function ProductDetailScreen() {
               <Text style={styles.verifyBannerTitle}>Producto agregado por la comunidad</Text>
             </View>
             <Text style={styles.verifyBannerText}>
-              {confirmStatus.confirm_count}/{confirmStatus.needed} confirmaciones para verificarlo.
-              {confirmStatus.user_action ? ' Ya evaluaste este producto.' : ' ¿La información es correcta?'}
+              ✓ {confirmStatus.confirm_count}/{confirmStatus.needed} confirmaciones
+              {'  '}✗ {confirmStatus.reject_count}/3 rechazos
+            </Text>
+            <Text style={styles.verifyBannerText}>
+              {confirmStatus.user_action ? 'Ya evaluaste este producto.' : '¿La información es correcta?'}
             </Text>
             {!confirmStatus.user_action && user && (
               <View style={styles.verifyButtons}>

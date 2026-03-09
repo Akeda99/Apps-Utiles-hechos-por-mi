@@ -92,6 +92,7 @@ export type User = {
 
 export type ConfirmationStatus = {
   confirm_count: number;
+  reject_count: number;
   needed: number;
   user_action: 'confirm' | 'reject' | null;
 };
