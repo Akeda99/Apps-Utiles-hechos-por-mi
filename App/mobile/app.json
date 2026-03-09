@@ -6,6 +6,12 @@
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1DB954"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -22,6 +28,10 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.nutriscanperu.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1DB954"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
