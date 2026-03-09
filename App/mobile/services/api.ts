@@ -251,6 +251,9 @@ export const api = {
   getConfirmationStatus: (barcode: string): Promise<ConfirmationStatus> =>
     apiClient.get(`/contributions/${barcode}/confirmation-status`).then((r) => r.data),
 
+  deleteAccount: () =>
+    apiClient.delete('/users/me'),
+
   getLeaderboard: (): Promise<{ rank: number; display_name: string; points: number; contribution_count: number }[]> =>
     apiClient.get('/users/leaderboard').then((r) => r.data),
 

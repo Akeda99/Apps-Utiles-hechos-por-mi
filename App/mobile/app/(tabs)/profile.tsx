@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { useProductStore } from '@/store/useProductStore';
+import { api } from '@/services/api';
 import { Colors } from '@/constants/colors';
 
 type MenuItemProps = {
@@ -42,6 +43,41 @@ export default function ProfileScreen() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Cerrar sesión', style: 'destructive', onPress: logout },
     ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Eliminar cuenta',
+      'Esta acción es permanente. Se borrarán todos tus datos: historial, favoritos y contribuciones.\n\n¿Estás seguro?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar cuenta',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirmación final',
+              '¿Confirmas que quieres eliminar tu cuenta permanentemente?',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Sí, eliminar',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await api.deleteAccount();
+                      logout();
+                    } catch {
+                      Alert.alert('Error', 'No se pudo eliminar la cuenta. Intenta de nuevo.');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   if (!user) {
@@ -167,6 +203,12 @@ export default function ProfileScreen() {
             icon="log-out-outline"
             label="Cerrar sesión"
             onPress={handleLogout}
+            color={Colors.red}
+          />
+          <MenuItem
+            icon="trash-outline"
+            label="Eliminar cuenta"
+            onPress={handleDeleteAccount}
             color={Colors.red}
           />
         </View>
