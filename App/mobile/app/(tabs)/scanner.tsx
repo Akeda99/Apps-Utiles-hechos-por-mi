@@ -1,16 +1,35 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { Colors } from '@/constants/colors';
+import { useProductStore } from '@/store/useProductStore';
+import { storage, FREE_DAILY_LIMIT } from '@/services/storage';
 
 export default function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [scansUsed, setScansUsed] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
+  const { user } = useProductStore();
+
+  const isFreePlan = !user?.premium;
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      if (isFreePlan) {
+        storage.getDailyScansUsed().then(setScansUsed);
+      }
+      return () => {
+        setIsFocused(false);
+      };
+    }, [isFreePlan])
+  );
 
   const handleScan = useCallback(
     async (barcode: string) => {
@@ -43,7 +62,7 @@ export default function ScannerScreen() {
 
   return (
     <View style={styles.container}>
-      <BarcodeScanner onScan={handleScan} />
+      {isFocused && <BarcodeScanner onScan={handleScan} />}
 
       {/* Header flotante */}
       <SafeAreaView style={styles.header} edges={['top']}>
@@ -56,6 +75,16 @@ export default function ScannerScreen() {
         <Text style={styles.footerText}>
           Apunta la cámara al código de barras del producto
         </Text>
+        {isFreePlan && (
+          <View style={[
+            styles.scanCountBadge,
+            scansUsed >= FREE_DAILY_LIMIT - 2 && styles.scanCountBadgeWarning,
+          ]}>
+            <Text style={styles.scanCountText}>
+              {FREE_DAILY_LIMIT - scansUsed} escaneos restantes hoy
+            </Text>
+          </View>
+        )}
         {scanned && (
           <View style={styles.scanningBadge}>
             <Text style={styles.scanningText}>Buscando producto...</Text>
@@ -136,6 +165,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+  scanCountBadge: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  scanCountBadgeWarning: {
+    backgroundColor: 'rgba(220,38,38,0.75)',
+    borderColor: 'rgba(255,100,100,0.4)',
+  },
+  scanCountText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    fontWeight: '600',
   },
   scanningBadge: {
     backgroundColor: Colors.primary,

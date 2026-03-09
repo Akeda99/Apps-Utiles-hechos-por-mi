@@ -53,7 +53,7 @@ export default function FavoritesScreen() {
           renderItem={({ item }) => (
             <Pressable
               style={styles.card}
-              onPress={() => router.push(`/product/${item.barcode}`)}
+              onPress={() => router.push(`/product/${item.barcode}?from=saved` as any)}
             >
               <Image
                 source={{ uri: item.image_url }}

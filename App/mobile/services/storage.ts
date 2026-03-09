@@ -4,7 +4,11 @@ import type { Product } from './api';
 const HISTORY_KEY     = 'scan_history_local';
 const FAVORITES_KEY   = 'favorites_local';
 const SUGGESTIONS_KEY = 'product_suggestions_local';
+const ANON_SCANS_KEY  = 'anon_daily_scans';
+const TERMS_KEY       = 'has_accepted_terms';
 const MAX_LOCAL_HISTORY = 50;
+
+export const FREE_DAILY_LIMIT = 10;
 
 export type LocalHistoryItem = Product & { scanned_at: string };
 
@@ -93,5 +97,35 @@ export const storage = {
   async removeLocalSuggestion(barcode: string): Promise<void> {
     const list = await storage.getLocalSuggestions();
     await AsyncStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(list.filter((s) => s.barcode !== barcode)));
+  },
+
+  // ── Contador de escaneos diarios (límite free) ───────────────────────────
+  async getDailyScansUsed(): Promise<number> {
+    const today = new Date().toISOString().slice(0, 10);
+    const raw = await AsyncStorage.getItem(ANON_SCANS_KEY);
+    const current: { count: number; date: string } = raw ? JSON.parse(raw) : { count: 0, date: '' };
+    return current.date === today ? current.count : 0;
+  },
+
+  async checkAndIncrementAnonScan(): Promise<{ allowed: boolean; remaining: number }> {
+    const today = new Date().toISOString().slice(0, 10);
+    const raw = await AsyncStorage.getItem(ANON_SCANS_KEY);
+    const current: { count: number; date: string } = raw ? JSON.parse(raw) : { count: 0, date: '' };
+    const count = current.date === today ? current.count : 0;
+    if (count >= FREE_DAILY_LIMIT) {
+      return { allowed: false, remaining: 0 };
+    }
+    await AsyncStorage.setItem(ANON_SCANS_KEY, JSON.stringify({ count: count + 1, date: today }));
+    return { allowed: true, remaining: FREE_DAILY_LIMIT - count - 1 };
+  },
+
+  // ── Aceptación de términos ────────────────────────────────────────────────
+  async hasAcceptedTerms(): Promise<boolean> {
+    const val = await AsyncStorage.getItem(TERMS_KEY);
+    return val === 'true';
+  },
+
+  async acceptTerms(): Promise<void> {
+    await AsyncStorage.setItem(TERMS_KEY, 'true');
   },
 };

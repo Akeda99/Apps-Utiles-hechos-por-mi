@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TextInput, Pressable, ActivityIndicator, Alert,
+  TextInput, Pressable, ActivityIndicator, Alert, Image,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 
-import { apiClient } from '@/services/api';
+import { apiClient, api } from '@/services/api';
 import { Colors } from '@/constants/colors';
+import { useProductStore } from '@/store/useProductStore';
 
 type Field = { key: string; label: string; unit?: string; numeric?: boolean };
 
@@ -27,8 +30,51 @@ const FIELDS: Field[] = [
 
 export default function ContributeScreen() {
   const { barcode } = useLocalSearchParams<{ barcode: string }>();
+  const { refreshUser } = useProductStore();
   const [form, setForm] = useState<Record<string, string>>({});
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para agregar una foto.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu cámara.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const handleImagePress = () => {
+    Alert.alert('Foto del producto', 'Elige una opción', [
+      { text: 'Tomar foto', onPress: takePhoto },
+      { text: 'Elegir de galería', onPress: pickImage },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
 
   const handleSubmit = async () => {
     if (!form.name) {
@@ -49,13 +95,25 @@ export default function ContributeScreen() {
         protein: form.protein ? parseFloat(form.protein) : undefined,
         sodium_mg: form.sodium_mg ? parseFloat(form.sodium_mg) : undefined,
       });
+
+      // Subir foto si el usuario seleccionó una
+      if (imageUri) {
+        try {
+          await api.uploadProductImage(barcode!, imageUri);
+        } catch {
+          // No bloquear el flujo si la foto falla
+        }
+      }
+
+      await refreshUser();
+
       Alert.alert(
-        'Gracias!',
-        'Tu contribucion fue enviada. La revisaremos pronto.',
+        '¡Gracias! +10 puntos',
+        'Tu contribución fue enviada y ya está visible en la app.',
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch {
-      Alert.alert('Error', 'No pudimos enviar tu contribucion. Intentalo de nuevo.');
+      Alert.alert('Error', 'No pudimos enviar tu contribución. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -65,14 +123,32 @@ export default function ContributeScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.barcodeBox}>
-          <Text style={styles.barcodeLabel}>Codigo de barras</Text>
+          <Text style={styles.barcodeLabel}>Código de barras</Text>
           <Text style={styles.barcodeValue}>{barcode}</Text>
         </View>
 
         <Text style={styles.instructions}>
-          Completa los datos del producto desde la etiqueta nutricional.
-          Solo el nombre es obligatorio.
+          Completa los datos desde la etiqueta nutricional.
+          Solo el nombre es obligatorio. Ganas +10 puntos al contribuir.
         </Text>
+
+        {/* Foto del producto */}
+        <Pressable style={styles.imagePicker} onPress={handleImagePress}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="camera-outline" size={36} color={Colors.textLight} />
+              <Text style={styles.imagePlaceholderText}>Agregar foto del producto</Text>
+              <Text style={styles.imagePlaceholderSub}>Toca para tomar o elegir</Text>
+            </View>
+          )}
+          {imageUri && (
+            <View style={styles.imageChangeOverlay}>
+              <Ionicons name="camera" size={20} color={Colors.white} />
+            </View>
+          )}
+        </Pressable>
 
         {FIELDS.map((field) => (
           <View key={field.key} style={styles.fieldGroup}>
@@ -97,7 +173,7 @@ export default function ContributeScreen() {
           {loading ? (
             <ActivityIndicator color={Colors.white} />
           ) : (
-            <Text style={styles.submitText}>Enviar contribucion</Text>
+            <Text style={styles.submitText}>Enviar contribución</Text>
           )}
         </Pressable>
       </ScrollView>
@@ -125,6 +201,32 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     padding: 16,
     borderRadius: 12,
+  },
+  imagePicker: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+    height: 160,
+  },
+  imagePreview: { width: '100%', height: '100%', resizeMode: 'cover' },
+  imagePlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  imagePlaceholderText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  imagePlaceholderSub: { fontSize: 13, color: Colors.textLight },
+  imageChangeOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 16,
+    padding: 6,
   },
   fieldGroup: { gap: 6 },
   fieldLabel: { fontSize: 14, fontWeight: '600', color: Colors.text },

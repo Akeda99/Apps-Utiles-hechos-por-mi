@@ -12,13 +12,12 @@ import { HealthScoreWheel } from '@/components/HealthScoreWheel';
 import { NutrientTrafficLight } from '@/components/NutrientTrafficLight';
 import { WarningBadge } from '@/components/WarningBadge';
 import { AlternativeCard } from '@/components/AlternativeCard';
-import { PremiumGate } from '@/components/PremiumGate';
 import { useProductStore } from '@/store/useProductStore';
 import { Colors, ScoreColors } from '@/constants/colors';
 import { api } from '@/services/api';
 import { storage } from '@/services/storage';
 import type { ScoreLabel } from '@/constants/colors';
-import type { Product, AdditiveDetail, DataQuality, AdvancedAnalysis, HealthCheckResult } from '@/services/api';
+import type { Product, AdditiveDetail, DataQuality, HealthCheckResult } from '@/services/api';
 
 const RISK_COLORS = {
   green:  { bg: '#D4EDDA', border: '#C3E6CB', text: '#155724', dot: '#28a745' },
@@ -126,65 +125,11 @@ const REPORT_REASONS = [
   { value: 'otro', label: 'Otro motivo' },
 ];
 
-function buildQuickSummary(
-  product: Product,
-  additiveDetails: AdditiveDetail[],
-): { icon: string; text: string; color: string; bg: string }[] {
-  const chips: { icon: string; text: string; color: string; bg: string }[] = [];
-
-  // Aditivos
-  const redAdditives = additiveDetails.filter((a) => a.risk_level === 'red').length;
-  const yellowAdditives = additiveDetails.filter((a) => a.risk_level === 'yellow').length;
-  if (redAdditives > 0) {
-    chips.push({ icon: 'warning', text: `${redAdditives} aditivo${redAdditives > 1 ? 's' : ''} de riesgo`, color: '#721C24', bg: '#F8D7DA' });
-  } else if (yellowAdditives > 0) {
-    chips.push({ icon: 'alert-circle', text: `${yellowAdditives} aditivo${yellowAdditives > 1 ? 's' : ''} con precaución`, color: '#856404', bg: '#FFF3CD' });
-  } else if (additiveDetails.length === 0) {
-    chips.push({ icon: 'checkmark-circle', text: 'Sin aditivos detectados', color: '#155724', bg: '#D4EDDA' });
-  } else {
-    chips.push({ icon: 'checkmark-circle', text: 'Aditivos seguros', color: '#155724', bg: '#D4EDDA' });
-  }
-
-  // Sodio
-  if (product.sodium_mg >= 600) {
-    chips.push({ icon: 'alert-circle', text: 'Muy alto en sodio', color: '#721C24', bg: '#F8D7DA' });
-  } else if (product.sodium_mg >= 300) {
-    chips.push({ icon: 'alert-circle', text: 'Alto en sodio', color: '#856404', bg: '#FFF3CD' });
-  }
-
-  // Azúcares
-  if (product.sugars >= 22.5) {
-    chips.push({ icon: 'alert-circle', text: 'Muy alto en azúcares', color: '#721C24', bg: '#F8D7DA' });
-  } else if (product.sugars >= 12) {
-    chips.push({ icon: 'alert-circle', text: 'Alto en azúcares', color: '#856404', bg: '#FFF3CD' });
-  }
-
-  // Grasas saturadas
-  if (product.fat_saturated >= 5) {
-    chips.push({ icon: 'alert-circle', text: 'Alto en grasas saturadas', color: '#856404', bg: '#FFF3CD' });
-  }
-
-  // Grasas trans
-  if (product.fat_trans > 0) {
-    chips.push({ icon: 'close-circle', text: 'Contiene grasas trans', color: '#721C24', bg: '#F8D7DA' });
-  }
-
-  // Proteína positiva
-  if (product.protein >= 10) {
-    chips.push({ icon: 'trending-up', text: 'Buena fuente de proteína', color: '#155724', bg: '#D4EDDA' });
-  }
-
-  // Fibra positiva
-  if (product.fiber >= 3) {
-    chips.push({ icon: 'leaf', text: 'Buena fuente de fibra', color: '#155724', bg: '#D4EDDA' });
-  }
-
-  return chips;
-}
 
 export default function ProductDetailScreen() {
-  const { barcode } = useLocalSearchParams<{ barcode: string }>();
-  const { scanProduct, addFavorite, removeFavorite, isFavorite, refreshHistoryItem, user } = useProductStore();
+  const { barcode, from } = useLocalSearchParams<{ barcode: string; from?: string }>();
+  const viewOnly = from === 'saved';
+  const { scanProduct, addFavorite, removeFavorite, isFavorite, refreshHistoryItem, user, refreshUser } = useProductStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [alternatives, setAlternatives] = useState<Product[]>([]);
@@ -192,9 +137,12 @@ export default function ProductDetailScreen() {
   const [dataQuality, setDataQuality] = useState<DataQuality | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [scanLimitHit, setScanLimitHit] = useState(false);
   const [expandedAdditive, setExpandedAdditive] = useState<string | null>(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportComment, setReportComment] = useState('');
+  const [showReportComment, setShowReportComment] = useState(false);
   const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [suggestSubmitting, setSuggestSubmitting] = useState(false);
   const [suggestIngredients, setSuggestIngredients] = useState('');
@@ -216,9 +164,9 @@ export default function ProductDetailScreen() {
   const [showNutrition, setShowNutrition] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
   const [localSuggestion, setLocalSuggestion] = useState<import('@/services/storage').LocalSuggestion | null>(null);
-  const [advancedAnalysis, setAdvancedAnalysis] = useState<AdvancedAnalysis | null>(null);
   const [healthCheck, setHealthCheck] = useState<HealthCheckResult | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState<import('@/services/api').ConfirmationStatus | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const isFav = product ? isFavorite(product.id) : false;
 
@@ -227,14 +175,18 @@ export default function ProductDetailScreen() {
     (async () => {
       let scanResult: { product: Product; alternatives: Product[]; additive_details: AdditiveDetail[]; data_quality: DataQuality | null } | null = null;
       try {
-        scanResult = await scanProduct(barcode);
+        scanResult = await scanProduct(barcode, viewOnly);
         setProduct(scanResult.product);
         setAlternatives(scanResult.alternatives || []);
         setAdditiveDetails(scanResult.additive_details || []);
         setDataQuality(scanResult.data_quality || null);
       } catch (e: any) {
-        const detail = e?.response?.data?.detail;
-        setError(detail?.can_contribute ? 'not_found' : 'error');
+        if (e?.code === 'SCAN_LIMIT') {
+          setScanLimitHit(true);
+        } else {
+          const detail = e?.response?.data?.detail;
+          setError(detail?.can_contribute ? 'not_found' : 'error');
+        }
       } finally {
         setLoading(false);
       }
@@ -322,6 +274,29 @@ export default function ProductDetailScreen() {
     if (!product || !user?.premium || !barcode) return;
     api.getHealthCheck(barcode).then(setHealthCheck).catch(() => {});
   }, [product, user?.premium]);
+
+  useEffect(() => {
+    if (!product || product.verified || product.source !== 'user' || !barcode) return;
+    api.getConfirmationStatus(barcode).then(setConfirmStatus).catch(() => {});
+  }, [product]);
+
+  const handleConfirm = async (action: 'confirm' | 'reject') => {
+    if (!barcode || confirmLoading) return;
+    setConfirmLoading(true);
+    try {
+      await api.confirmProduct(barcode, action);
+      const updated = await api.getConfirmationStatus(barcode);
+      setConfirmStatus(updated);
+      await refreshUser();
+      if (action === 'confirm') {
+        Alert.alert('Gracias! +2 puntos', `${updated.confirm_count}/${updated.needed} confirmaciones para verificar el producto.`);
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e?.response?.data?.detail ?? 'No se pudo registrar tu evaluación.');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
 
   const openSuggestModal = () => {
     setSuggestIngredients(product?.ingredients_text ?? '');
@@ -421,6 +396,21 @@ export default function ProductDetailScreen() {
     );
   }
 
+  if (scanLimitHit) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Ionicons name="lock-closed" size={64} color="#F59E0B" />
+        <Text style={styles.notFoundTitle}>Límite diario alcanzado</Text>
+        <Text style={styles.notFoundText}>
+          Has usado tus 10 escaneos gratuitos de hoy. Hazte Premium para escaneos ilimitados.
+        </Text>
+        <Pressable style={styles.contributeButton} onPress={() => router.back()}>
+          <Text style={styles.contributeButtonText}>Volver</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
   if (error === 'not_found') {
     return (
       <SafeAreaView style={styles.centered}>
@@ -448,7 +438,6 @@ export default function ProductDetailScreen() {
   }
 
   const scoreColor = ScoreColors[product.score_label as ScoreLabel] ?? Colors.textLight;
-  const quickSummary = buildQuickSummary(product, additiveDetails);
 
   return (
     <>
@@ -480,24 +469,6 @@ export default function ProductDetailScreen() {
         {/* Health Score */}
         <View style={styles.scoreSection}>
           <HealthScoreWheel score={product.health_score ?? 0} label={product.score_label as ScoreLabel} />
-          <View style={styles.explanationBox}>
-            <Text style={styles.explanation}>
-              {product.score_details?.explanation ?? ''}
-            </Text>
-          </View>
-        </View>
-
-        {/* Resumen rápido */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumen</Text>
-          <View style={styles.chipsContainer}>
-            {quickSummary.map((chip, i) => (
-              <View key={i} style={[styles.chip, { backgroundColor: chip.bg }]}>
-                <Ionicons name={chip.icon as any} size={14} color={chip.color} />
-                <Text style={[styles.chipText, { color: chip.color }]}>{chip.text}</Text>
-              </View>
-            ))}
-          </View>
         </View>
 
         {/* Aviso de datos sospechosos */}
@@ -627,55 +598,6 @@ export default function ProductDetailScreen() {
           </View>
         )}
 
-        {/* Análisis nutricional avanzado (premium) */}
-        <View style={styles.section}>
-          <Pressable style={styles.premiumSectionHeader} onPress={() => {
-            if (!user?.premium) return;
-            if (!showAdvanced) {
-              api.getAdvancedAnalysis(barcode!).then(setAdvancedAnalysis).catch(() => {});
-            }
-            setShowAdvanced((v) => !v);
-          }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={styles.sectionTitle}>Análisis nutricional avanzado</Text>
-              <View style={styles.premiumBadge}><Text style={styles.premiumBadgeText}>PREMIUM</Text></View>
-            </View>
-            {user?.premium && <Ionicons name={showAdvanced ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.primary} />}
-          </Pressable>
-
-          {!user?.premium && <PremiumGate feature="El análisis nutricional avanzado" />}
-
-          {user?.premium && showAdvanced && (
-            advancedAnalysis ? (
-              <View style={{ gap: 12, marginTop: 8 }}>
-                <Text style={styles.advancedSummary}>{advancedAnalysis.summary}</Text>
-                {advancedAnalysis.nutrients.map((n) => (
-                  <View key={n.field} style={[styles.advancedNutrient, n.level === 'high' ? styles.advancedHigh : n.level === 'medium' ? styles.advancedMedium : styles.advancedLow]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={styles.advancedNutrientName}>{n.name}</Text>
-                      <Text style={styles.advancedNutrientValue}>{n.value}{n.unit}</Text>
-                    </View>
-                    <Text style={styles.advancedNutrientExplanation}>{n.explanation}</Text>
-                  </View>
-                ))}
-                {advancedAnalysis.additives.length > 0 && (
-                  <View style={{ gap: 8 }}>
-                    <Text style={[styles.sectionTitle, { fontSize: 14 }]}>Aditivos detectados</Text>
-                    {advancedAnalysis.additives.map((ad) => (
-                      <View key={ad.code} style={[styles.advancedNutrient, RISK_COLORS[ad.risk_level] ? { backgroundColor: RISK_COLORS[ad.risk_level].bg, borderColor: RISK_COLORS[ad.risk_level].border, borderWidth: 1, borderRadius: 10, padding: 10 } : {}]}>
-                        <Text style={{ fontWeight: '700', fontSize: 13 }}>{ad.name} ({ad.code})</Text>
-                        <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4 }}>{ad.explanation}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ) : (
-              <ActivityIndicator style={{ marginTop: 12 }} color={Colors.primary} />
-            )
-          )}
-        </View>
-
         {/* Banner de sugerencia enviada */}
         {localSuggestion && (
           <View style={styles.suggestionBanner}>
@@ -709,8 +631,65 @@ export default function ProductDetailScreen() {
           </View>
         )}
 
+        {/* Banner de verificación comunitaria */}
+        {product.source === 'user' && !product.verified && confirmStatus && (
+          <View style={styles.verifyBanner}>
+            <View style={styles.verifyBannerHeader}>
+              <Ionicons name="people-outline" size={18} color="#1D4ED8" />
+              <Text style={styles.verifyBannerTitle}>Producto agregado por la comunidad</Text>
+            </View>
+            <Text style={styles.verifyBannerText}>
+              {confirmStatus.confirm_count}/{confirmStatus.needed} confirmaciones para verificarlo.
+              {confirmStatus.user_action ? ' Ya evaluaste este producto.' : ' ¿La información es correcta?'}
+            </Text>
+            {!confirmStatus.user_action && user && (
+              <View style={styles.verifyButtons}>
+                <Pressable
+                  style={[styles.verifyBtn, styles.verifyBtnConfirm]}
+                  onPress={() => handleConfirm('confirm')}
+                  disabled={confirmLoading}
+                >
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Text style={styles.verifyBtnText}>Correcto</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.verifyBtn, styles.verifyBtnReject]}
+                  onPress={() => handleConfirm('reject')}
+                  disabled={confirmLoading}
+                >
+                  <Ionicons name="close" size={16} color="#fff" />
+                  <Text style={styles.verifyBtnText}>Incorrecto</Text>
+                </Pressable>
+              </View>
+            )}
+            {!user && (
+              <Text style={styles.verifyLoginText}>Inicia sesión para ayudar a verificar</Text>
+            )}
+          </View>
+        )}
+
+        {/* Banner premium para usuarios free */}
+        {!user?.premium && (
+          <View style={styles.premiumBanner}>
+            <Ionicons name="star" size={20} color="#F59E0B" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.premiumBannerTitle}>Hazte Premium</Text>
+              <Text style={styles.premiumBannerText}>Accede a alertas de salud personalizadas según tu perfil médico.</Text>
+            </View>
+          </View>
+        )}
+
         {/* Botones de acción */}
         <View style={styles.section}>
+          {user?.premium && (
+            <Pressable
+              style={styles.compareButton}
+              onPress={() => router.push(`/premium/compare?barcode=${barcode}` as any)}
+            >
+              <Ionicons name="git-compare-outline" size={16} color={Colors.primary} />
+              <Text style={styles.compareButtonText}>Comparar con otro producto</Text>
+            </Pressable>
+          )}
           <Pressable style={styles.suggestButton} onPress={openSuggestModal}>
             <Ionicons name="create-outline" size={16} color={Colors.primary} />
             <Text style={styles.suggestButtonText}>Corregir información del producto</Text>
@@ -889,26 +868,73 @@ export default function ProductDetailScreen() {
         visible={reportModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setReportModalVisible(false)}
+        onRequestClose={() => {
+          setReportModalVisible(false);
+          setShowReportComment(false);
+          setReportComment('');
+        }}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setReportModalVisible(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => {
+          setReportModalVisible(false);
+          setShowReportComment(false);
+          setReportComment('');
+        }}>
           <Pressable style={styles.modalContent} onPress={() => {}}>
             <Text style={styles.modalTitle}>Reportar información incorrecta</Text>
-            <Text style={styles.modalSubtitle}>¿Cuál es el problema con este producto?</Text>
-            {REPORT_REASONS.map((r) => (
-              <Pressable
-                key={r.value}
-                style={({ pressed }) => [styles.reportReasonButton, pressed && { opacity: 0.7 }]}
-                onPress={() => handleReport(r.value)}
-                disabled={reportSubmitting}
-              >
-                <Text style={styles.reportReasonText}>{r.label}</Text>
-                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            {!showReportComment ? (
+              <>
+                <Text style={styles.modalSubtitle}>¿Cuál es el problema con este producto?</Text>
+                {REPORT_REASONS.map((r) => (
+                  <Pressable
+                    key={r.value}
+                    style={({ pressed }) => [styles.reportReasonButton, pressed && { opacity: 0.7 }]}
+                    onPress={() => {
+                      if (r.value === 'otro') {
+                        setShowReportComment(true);
+                      } else {
+                        handleReport(r.value);
+                      }
+                    }}
+                    disabled={reportSubmitting}
+                  >
+                    <Text style={styles.reportReasonText}>{r.label}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                  </Pressable>
+                ))}
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalSubtitle}>Cuéntanos el problema con más detalle:</Text>
+                <TextInput
+                  style={styles.reportCommentInput}
+                  placeholder="Describe el problema..."
+                  placeholderTextColor={Colors.textLight}
+                  value={reportComment}
+                  onChangeText={setReportComment}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <Pressable
+                  style={[styles.submitButton, !reportComment.trim() && { opacity: 0.5 }]}
+                  onPress={() => handleReport(`otro: ${reportComment.trim()}`)}
+                  disabled={reportSubmitting || !reportComment.trim()}
+                >
+                  {reportSubmitting
+                    ? <ActivityIndicator color={Colors.white} />
+                    : <Text style={styles.submitButtonText}>Enviar reporte</Text>
+                  }
+                </Pressable>
+                <Pressable style={styles.cancelButton} onPress={() => setShowReportComment(false)}>
+                  <Text style={styles.cancelButtonText}>Volver</Text>
+                </Pressable>
+              </>
+            )}
+            {!showReportComment && (
+              <Pressable style={styles.cancelButton} onPress={() => setReportModalVisible(false)}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
               </Pressable>
-            ))}
-            <Pressable style={styles.cancelButton} onPress={() => setReportModalVisible(false)}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </Pressable>
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -1010,24 +1036,6 @@ const styles = StyleSheet.create({
   brand: { fontSize: 15, color: Colors.textSecondary, marginTop: 4 },
   favoriteButton: { position: 'absolute', top: 20, right: 20 },
   scoreSection: { alignItems: 'center', padding: 24, gap: 16 },
-  explanationBox: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    width: '100%',
-  },
-  explanation: { fontSize: 15, color: Colors.text, lineHeight: 22, textAlign: 'center' },
-  // Resumen rápido
-  chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  chipText: { fontSize: 13, fontWeight: '600' },
   // Quality warning
   qualityWarningBox: {
     flexDirection: 'row',
@@ -1175,6 +1183,26 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   reportReasonText: { fontSize: 15, color: Colors.text },
+  reportCommentInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: Colors.text,
+    minHeight: 100,
+    marginTop: 8,
+    marginBottom: 12,
+    backgroundColor: Colors.background,
+  },
+  submitButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  submitButtonText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
   cancelButton: {
     alignItems: 'center',
     paddingVertical: 14,
@@ -1253,20 +1281,54 @@ const styles = StyleSheet.create({
   additiveDropdownCode: { fontSize: 13, fontWeight: '700', color: Colors.text, minWidth: 44 },
   additiveDropdownName: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
   // Premium
-  premiumSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  premiumBadge: { backgroundColor: '#F59E0B', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  premiumBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   healthAlert: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: 'flex-start' },
   healthAlertHigh: { backgroundColor: '#F8D7DA', borderColor: '#F5C6CB' },
   healthAlertMedium: { backgroundColor: '#FFF3CD', borderColor: '#FFEAA7' },
   healthAlertLabel: { fontSize: 13, fontWeight: '700' },
   healthAlertMsg: { fontSize: 12, lineHeight: 18 },
-  advancedSummary: { fontSize: 14, color: Colors.text, lineHeight: 21, fontStyle: 'italic', backgroundColor: '#F0FFF4', padding: 12, borderRadius: 10 },
-  advancedNutrient: { padding: 10, borderRadius: 10, borderWidth: 1, gap: 4 },
-  advancedHigh: { backgroundColor: '#F8D7DA', borderColor: '#F5C6CB' },
-  advancedMedium: { backgroundColor: '#FFF3CD', borderColor: '#FFEAA7' },
-  advancedLow: { backgroundColor: '#D4EDDA', borderColor: '#C3E6CB' },
-  advancedNutrientName: { fontSize: 13, fontWeight: '700', color: Colors.text },
-  advancedNutrientValue: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary },
-  advancedNutrientExplanation: { fontSize: 12, color: Colors.text, lineHeight: 18 },
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
+    padding: 14,
+  },
+  premiumBannerTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
+  premiumBannerText: { fontSize: 12, color: '#92400E', lineHeight: 18, marginTop: 2 },
+  verifyBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  verifyBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  verifyBannerTitle: { fontSize: 14, fontWeight: '700', color: '#1D4ED8' },
+  verifyBannerText: { fontSize: 13, color: '#1E40AF', lineHeight: 18 },
+  verifyButtons: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  verifyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8 },
+  verifyBtnConfirm: { backgroundColor: '#16A34A' },
+  verifyBtnReject: { backgroundColor: '#DC2626' },
+  verifyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  verifyLoginText: { fontSize: 12, color: '#1D4ED8', fontStyle: 'italic' },
+  compareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    marginBottom: 8,
+  },
+  compareButtonText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
 });

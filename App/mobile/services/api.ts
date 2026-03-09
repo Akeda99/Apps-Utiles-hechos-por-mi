@@ -87,6 +87,13 @@ export type User = {
   premium_until: string | null;
   health_conditions: string[] | null;
   contribution_count: number;
+  points: number;
+};
+
+export type ConfirmationStatus = {
+  confirm_count: number;
+  needed: number;
+  user_action: 'confirm' | 'reject' | null;
 };
 
 export type NutrientAnalysis = {
@@ -162,8 +169,8 @@ export type HistoryItem = Product & {
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 export const api = {
-  scan: (barcode: string): Promise<ScanResult> =>
-    apiClient.get(`/scan/${barcode}`).then((r) => r.data),
+  scan: (barcode: string, viewOnly = false): Promise<ScanResult> =>
+    apiClient.get(`/scan/${barcode}`, viewOnly ? { params: { view_only: true } } : {}).then((r) => r.data),
 
   getProduct: (barcode: string): Promise<Product> =>
     apiClient.get(`/products/${barcode}`).then((r) => r.data),
@@ -236,4 +243,25 @@ export const api = {
 
   compareProducts: (barcodes: string[]): Promise<CompareResult> =>
     apiClient.post('/premium/products/compare', { barcodes }).then((r) => r.data),
+
+  confirmProduct: (barcode: string, action: 'confirm' | 'reject') =>
+    apiClient.post(`/contributions/${barcode}/confirm`, { action }).then((r) => r.data),
+
+  getConfirmationStatus: (barcode: string): Promise<ConfirmationStatus> =>
+    apiClient.get(`/contributions/${barcode}/confirmation-status`).then((r) => r.data),
+
+  getLeaderboard: (): Promise<{ rank: number; display_name: string; points: number; contribution_count: number }[]> =>
+    apiClient.get('/users/leaderboard').then((r) => r.data),
+
+  uploadProductImage: async (barcode: string, imageUri: string): Promise<string> => {
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop() ?? 'photo.jpg';
+    const ext = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+    formData.append('file', { uri: imageUri, name: filename, type: mimeType } as any);
+    const res = await apiClient.post(`/products/${barcode}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data.image_url;
+  },
 };

@@ -19,9 +19,10 @@ type ProductStore = {
   googleLogin: (accessToken: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 
   // Scan
-  scanProduct: (barcode: string) => Promise<ScanResult>;
+  scanProduct: (barcode: string, viewOnly?: boolean) => Promise<ScanResult>;
 
   // History
   history: LocalHistoryItem[];
@@ -74,6 +75,13 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     set({ user: null, favorites: [], history: [] });
   },
 
+  refreshUser: async () => {
+    try {
+      const user = await api.getMe();
+      set({ user });
+    } catch {}
+  },
+
   loadUser: async () => {
     // Cargar favoritos locales siempre (sin importar sesión)
     get().loadFavorites();
@@ -93,12 +101,41 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   },
 
   // ── Scan ──────────────────────────────────────────────────────────────────
-  scanProduct: async (barcode) => {
-    const result = await api.scan(barcode);
+  scanProduct: async (barcode, viewOnly = false) => {
+    const { user } = get();
+
+    // Límite diario para usuarios anónimos (solo en escaneos reales, no vistas)
+    if (!viewOnly && !user) {
+      const { allowed } = await storage.checkAndIncrementAnonScan();
+      if (!allowed) {
+        const err = new Error('scan_limit') as any;
+        err.code = 'SCAN_LIMIT';
+        throw err;
+      }
+    }
+
+    let result: ScanResult;
+    try {
+      result = await api.scan(barcode, viewOnly);
+    } catch (err: any) {
+      // Límite diario para usuarios free logueados (devuelve 429 el backend)
+      if (err?.response?.status === 429) {
+        const e = new Error('scan_limit') as any;
+        e.code = 'SCAN_LIMIT';
+        throw e;
+      }
+      throw err;
+    }
+
+    // Para usuarios free logueados: incrementar contador local también (para UI)
+    if (!viewOnly && user && !user.premium) {
+      await storage.checkAndIncrementAnonScan();
+    }
+
     // Guardar en historial local siempre (sin importar si hay sesión)
     await storage.addToLocalHistory(result.product);
     // Si no hay sesión, actualizar también el snapshot guardado en AsyncStorage
-    if (!get().user) {
+    if (!user) {
       await storage.refreshLocalFavorite(result.product);
     }
     // Actualizar historial y favoritos en memoria con datos frescos
@@ -165,6 +202,9 @@ export const useProductStore = create<ProductStore>((set, get) => ({
         const favorites = await storage.getLocalFavorites();
         set({ favorites });
       }
+    } catch {
+      const favorites = await storage.getLocalFavorites();
+      set({ favorites });
     } finally {
       set({ isLoadingFavorites: false });
     }

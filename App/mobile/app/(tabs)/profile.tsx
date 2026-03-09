@@ -23,6 +23,17 @@ function MenuItem({ icon, label, onPress, color = Colors.text }: MenuItemProps) 
   );
 }
 
+const BADGES = [
+  { label: 'Explorador', minPoints: 1, icon: '🌱' },
+  { label: 'Colaborador', minPoints: 30, icon: '🤝' },
+  { label: 'Experto', minPoints: 100, icon: '⭐' },
+  { label: 'Leyenda', minPoints: 300, icon: '🏆' },
+];
+
+function getBadges(points: number) {
+  return BADGES.filter((b) => points >= b.minPoints);
+}
+
 export default function ProfileScreen() {
   const { user, logout } = useProductStore();
 
@@ -82,7 +93,30 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>{user.contribution_count}</Text>
             <Text style={styles.statLabel}>Contribuciones</Text>
           </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <View style={styles.pointsValue}>
+              <Ionicons name="star" size={18} color="#F59E0B" />
+              <Text style={styles.statValue}>{user.points ?? 0}</Text>
+            </View>
+            <Text style={styles.statLabel}>Puntos</Text>
+          </View>
         </View>
+
+        {/* Badges */}
+        {getBadges(user.points ?? 0).length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Logros</Text>
+            <View style={styles.badgesRow}>
+              {getBadges(user.points ?? 0).map((b) => (
+                <View key={b.label} style={styles.badge}>
+                  <Text style={styles.badgeIcon}>{b.icon}</Text>
+                  <Text style={styles.badgeLabel}>{b.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Menú */}
         <View style={styles.section}>
@@ -95,6 +129,18 @@ export default function ProfileScreen() {
               color={Colors.yellow}
             />
           )}
+          {user.premium && (
+            <MenuItem
+              icon="heart-outline"
+              label="Perfil de salud"
+              onPress={() => router.push('/premium/health-profile')}
+            />
+          )}
+          <MenuItem
+            icon="trophy-outline"
+            label="Ranking de contribuidores"
+            onPress={() => router.push('/leaderboard')}
+          />
           <MenuItem
             icon="notifications-outline"
             label="Notificaciones"
@@ -112,7 +158,7 @@ export default function ProfileScreen() {
           <MenuItem
             icon="shield-checkmark-outline"
             label="Privacidad y términos"
-            onPress={() => {}}
+            onPress={() => router.push('/terms')}
           />
         </View>
 
@@ -181,7 +227,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 8,
   },
-  statItem: { alignItems: 'center' },
+  statItem: { alignItems: 'center', flex: 1 },
+  statDivider: { width: 1, backgroundColor: Colors.border, alignSelf: 'stretch' },
+  pointsValue: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statValue: { fontSize: 24, fontWeight: '800', color: Colors.primary },
   statLabel: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
   section: {
@@ -211,4 +259,20 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   menuLabel: { flex: 1, fontSize: 16 },
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    padding: 16,
+  },
+  badge: {
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  badgeIcon: { fontSize: 24 },
+  badgeLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
 });
