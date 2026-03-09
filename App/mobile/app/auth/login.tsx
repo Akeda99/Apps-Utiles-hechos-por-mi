@@ -124,7 +124,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.inner}
       >
-        <Text style={styles.logo}>NutriScan</Text>
+        <Text style={styles.logo}>AlimentaPerú</Text>
         <Text style={styles.title}>{titles[screen]}</Text>
 
         <View style={styles.form}>

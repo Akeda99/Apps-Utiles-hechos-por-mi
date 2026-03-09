@@ -32,7 +32,7 @@ export default function TermsScreen() {
 
         <Section title="1. Descargo de responsabilidad nutricional">
           <P>
-            La información proporcionada en NutriScan Peru tiene fines informativos y educativos
+            La información proporcionada en AlimentaPerú tiene fines informativos y educativos
             únicamente. No constituye asesoramiento médico, nutricional ni profesional de ningún tipo.
           </P>
           <P>
@@ -63,7 +63,7 @@ export default function TermsScreen() {
 
         <Section title="4. Uso bajo responsabilidad del usuario">
           <P>
-            El uso de la aplicación es responsabilidad exclusiva del usuario. NutriScan Peru no se
+            El uso de la aplicación es responsabilidad exclusiva del usuario. AlimentaPerú no se
             responsabiliza por decisiones de consumo tomadas con base en la información mostrada en
             la aplicación.
           </P>
@@ -72,7 +72,7 @@ export default function TermsScreen() {
         <Section title="5. Contenido generado por usuarios">
           <P>
             Los usuarios que envíen información, reportes o contribuciones de productos son
-            responsables del contenido que proporcionen. NutriScan Peru se reserva el derecho de
+            responsables del contenido que proporcionen. AlimentaPerú se reserva el derecho de
             revisar, modificar o eliminar contenido que considere incorrecto, incompleto o
             inapropiado.
           </P>
@@ -80,7 +80,7 @@ export default function TermsScreen() {
 
         <Section title="6. Limitación de responsabilidad">
           <P>
-            En la medida máxima permitida por la ley, los desarrolladores de NutriScan Peru no
+            En la medida máxima permitida por la ley, los desarrolladores de AlimentaPerú no
             serán responsables por daños directos, indirectos, incidentales o consecuentes derivados
             del uso o la imposibilidad de uso de la aplicación.
           </P>
@@ -88,7 +88,7 @@ export default function TermsScreen() {
 
         <Section title="7. Propiedad intelectual">
           <P>
-            El diseño, software, logotipos y contenido original de NutriScan Peru están protegidos
+            El diseño, software, logotipos y contenido original de AlimentaPerú están protegidos
             por derechos de autor y no pueden ser reproducidos, distribuidos ni utilizados sin
             autorización expresa de sus desarrolladores.
           </P>
@@ -106,7 +106,7 @@ export default function TermsScreen() {
         <Text style={styles.partTitle}>POLÍTICA DE PRIVACIDAD</Text>
 
         <Section title="1. Información que recopilamos">
-          <P>Recopilamos la siguiente información cuando usas NutriScan Peru:</P>
+          <P>Recopilamos la siguiente información cuando usas AlimentaPerú:</P>
           <P>• Correo electrónico y nombre de usuario al registrarte.</P>
           <P>• Historial de productos escaneados y favoritos.</P>
           <P>• Contribuciones y reportes de productos que envíes.</P>
@@ -145,7 +145,7 @@ export default function TermsScreen() {
         </Section>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>NutriScan Peru © 2025</Text>
+          <Text style={styles.footerText}>AlimentaPerú © 2025</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -32,7 +32,7 @@ function TermsConsentModal({ onAccept }: { onAccept: () => void }) {
             >
               <Text style={styles.termsSectionTitle}>DESCARGO DE RESPONSABILIDAD</Text>
               <Text style={styles.termsText}>
-                La información proporcionada en NutriScan Peru tiene fines informativos y educativos
+                La información proporcionada en AlimentaPerú tiene fines informativos y educativos
                 únicamente. No constituye asesoramiento médico, nutricional ni profesional.{'\n\n'}
                 Para recomendaciones específicas sobre salud, dieta o condiciones médicas, consulte
                 a un profesional de la salud calificado.
@@ -55,7 +55,7 @@ function TermsConsentModal({ onAccept }: { onAccept: () => void }) {
 
               <Text style={styles.termsSectionTitle}>USO BAJO RESPONSABILIDAD DEL USUARIO</Text>
               <Text style={styles.termsText}>
-                NutriScan Peru no se responsabiliza por decisiones de consumo tomadas con base
+                AlimentaPerú no se responsabiliza por decisiones de consumo tomadas con base
                 en la información mostrada en la aplicación.
               </Text>
 
@@ -85,7 +85,7 @@ function TermsConsentModal({ onAccept }: { onAccept: () => void }) {
               <Text style={styles.termsText}>
                 Nos reservamos el derecho de modificar estos términos en cualquier momento.
                 Los cambios serán publicados dentro de la aplicación.{'\n\n'}
-                NutriScan Peru © 2025
+                AlimentaPerú © 2025
               </Text>
             </ScrollView>
 
@@ -113,7 +113,7 @@ function TermsConsentModal({ onAccept }: { onAccept: () => void }) {
     <Modal visible transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Bienvenido a NutriScan Peru</Text>
+          <Text style={styles.cardTitle}>Bienvenido a AlimentaPerú</Text>
           <Text style={styles.cardBody}>
             Esta app analiza productos alimenticios con fines informativos y educativos únicamente.
             No constituye asesoramiento médico ni nutricional.{'\n\n'}

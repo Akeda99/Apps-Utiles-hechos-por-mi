@@ -66,7 +66,7 @@ export default function ScannerScreen() {
 
       {/* Header flotante */}
       <SafeAreaView style={styles.header} edges={['top']}>
-        <Text style={styles.headerTitle}>NutriScan Peru</Text>
+        <Text style={styles.headerTitle}>AlimentaPerú</Text>
         <Text style={styles.headerSubtitle}>Escanea el código de barras</Text>
       </SafeAreaView>
 

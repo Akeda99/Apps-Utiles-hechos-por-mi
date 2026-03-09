@@ -188,8 +188,8 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>App</Text>
           <MenuItem
             icon="information-circle-outline"
-            label="Acerca de NutriScan Peru"
-            onPress={() => Alert.alert('NutriScan Peru', 'Versión 1.0.0\nHecho con amor para Peru')}
+            label="Acerca de AlimentaPerú"
+            onPress={() => Alert.alert('AlimentaPerú', 'Versión 1.0.0\nHecho con amor para Peru')}
           />
           <MenuItem
             icon="shield-checkmark-outline"

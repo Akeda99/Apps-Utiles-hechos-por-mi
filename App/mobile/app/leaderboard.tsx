@@ -34,7 +34,7 @@ export default function LeaderboardScreen() {
 
       <View style={styles.header}>
         <Text style={styles.title}>Top Contribuidores</Text>
-        <Text style={styles.subtitle}>Los usuarios que más aportan a NutriScan</Text>
+        <Text style={styles.subtitle}>Los usuarios que más aportan a AlimentaPerú</Text>
       </View>
 
       {loading ? (

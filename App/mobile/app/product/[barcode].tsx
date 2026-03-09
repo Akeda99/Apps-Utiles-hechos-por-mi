@@ -379,7 +379,7 @@ export default function ProductDetailScreen() {
     try {
       await api.reportProduct(barcode, reason);
       setReportModalVisible(false);
-      Alert.alert('Reporte enviado', 'Gracias por ayudar a mejorar NutriScan Peru.');
+      Alert.alert('Reporte enviado', 'Gracias por ayudar a mejorar AlimentaPerú.');
     } catch {
       Alert.alert('Error', 'No se pudo enviar el reporte. Intenta nuevamente.');
     } finally {
