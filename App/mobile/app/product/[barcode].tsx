@@ -197,29 +197,20 @@ export default function ProductDetailScreen() {
 
       if (!found?.changes || !scanResult) return;
 
-      // Si todos los cambios sugeridos ya coinciden con los datos del servidor,
-      // la sugerencia fue aprobada → limpiar banner local
-      const numFields = ['energy_kcal', 'protein', 'fat_total', 'fat_saturated', 'fat_trans', 'carbohydrates', 'sugars', 'fiber', 'sodium_mg'];
-      let allApplied = true;
-      for (const [key, val] of Object.entries(found.changes)) {
-        const serverVal = (scanResult.product as any)[key];
-        if (key === 'additives') {
-          const serverStr = [...(scanResult.product.additives ?? [])].sort().join(',');
-          const suggestedStr = [...(JSON.parse(val as string) as string[])].sort().join(',');
-          if (serverStr !== suggestedStr) { allApplied = false; break; }
-        } else if (numFields.includes(key)) {
-          if (Math.abs(parseFloat(serverVal ?? 0) - parseFloat(val as string)) > 0.01) { allApplied = false; break; }
-        } else {
-          if (serverVal !== val) { allApplied = false; break; }
+      // Consultar estado real de la sugerencia en el backend
+      try {
+        const { status: suggestionStatus } = await api.getSuggestionStatus(barcode);
+        if (suggestionStatus === 'approved' || suggestionStatus === 'rejected') {
+          await storage.removeLocalSuggestion(barcode);
+          setLocalSuggestion(null);
+          return;
         }
-      }
-      if (allApplied) {
-        await storage.removeLocalSuggestion(barcode);
-        setLocalSuggestion(null);
-        return;
+      } catch {
+        // Si falla (ej: sin sesión), dejamos el banner tal como estaba
       }
 
       const c = found.changes;
+      const numFields = ['energy_kcal', 'protein', 'fat_total', 'fat_saturated', 'fat_trans', 'carbohydrates', 'sugars', 'fiber', 'sodium_mg'];
 
       // Aplicar cambios locales sobre los datos del scan
       let mergedProduct: Product = { ...scanResult.product };
@@ -366,8 +357,12 @@ export default function ProductDetailScreen() {
       setSuggestModalVisible(false);
       Alert.alert('¡Gracias!', 'Tu sugerencia fue enviada y será revisada por nuestro equipo.');
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? e?.message ?? JSON.stringify(e);
-      Alert.alert('Error detalle', `${msg}`);
+      if (e?.response?.status === 401) {
+        Alert.alert('Inicia sesión', 'Debes tener una cuenta para enviar correcciones.');
+      } else {
+        const msg = e?.response?.data?.detail ?? e?.message ?? JSON.stringify(e);
+        Alert.alert('Error', `${msg}`);
+      }
     } finally {
       setSuggestSubmitting(false);
     }
@@ -693,10 +688,12 @@ export default function ProductDetailScreen() {
               <Text style={styles.compareButtonText}>Comparar con otro producto</Text>
             </Pressable>
           )}
-          <Pressable style={styles.suggestButton} onPress={openSuggestModal}>
-            <Ionicons name="create-outline" size={16} color={Colors.primary} />
-            <Text style={styles.suggestButtonText}>Corregir información del producto</Text>
-          </Pressable>
+          {user && (
+            <Pressable style={styles.suggestButton} onPress={openSuggestModal}>
+              <Ionicons name="create-outline" size={16} color={Colors.primary} />
+              <Text style={styles.suggestButtonText}>Corregir información del producto</Text>
+            </Pressable>
+          )}
           <Pressable style={[styles.reportButton, { marginTop: 8 }]} onPress={() => setReportModalVisible(true)}>
             <Ionicons name="flag-outline" size={16} color={Colors.textSecondary} />
             <Text style={styles.reportButtonText}>Reportar información incorrecta</Text>

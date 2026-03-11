@@ -226,6 +226,9 @@ export const api = {
   suggestProductEdit: (barcode: string, changes: Record<string, string>, comment?: string) =>
     apiClient.post('/suggestions/', { barcode, changes, comment }).then((r) => r.data),
 
+  getSuggestionStatus: (barcode: string): Promise<{ status: 'pending' | 'approved' | 'rejected' | null }> =>
+    apiClient.get('/suggestions/status', { params: { barcode } }).then((r) => r.data),
+
   searchAdditives: (q: string): Promise<{ e_number: string; name: string; risk_level: string; type: string; description: string; possible_health_effects: string }[]> =>
     apiClient.get('/products/additives/search', { params: { q } }).then((r) => r.data),
 
