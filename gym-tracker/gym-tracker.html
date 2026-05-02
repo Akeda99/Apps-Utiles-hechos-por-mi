@@ -346,6 +346,18 @@
     </div>
   </div>
 
+  <!-- Modal de confirmación al desmarcar días -->
+  <div class="modal-overlay" id="modalUnmark">
+    <div class="modal">
+      <h2>¿Retroceder progreso?</h2>
+      <p id="modalUnmarkText"></p>
+      <div class="modal-btns">
+        <button class="btn btn-primary" id="btnCancelUnmark">Cancelar</button>
+        <button class="btn btn-danger" id="btnConfirmUnmark">Sí, retroceder</button>
+      </div>
+    </div>
+  </div>
+
   <footer>Progreso guardado automáticamente en tu navegador.</footer>
 
   <script>
@@ -365,7 +377,9 @@
     const progressFill = document.getElementById('progressFill');
     const progressLabel= document.getElementById('progressLabel');
     const goalInput    = document.getElementById('goalInput');
-    const modalOverlay = document.getElementById('modalOverlay');
+    const modalOverlay  = document.getElementById('modalOverlay');
+    const modalUnmark   = document.getElementById('modalUnmark');
+    const modalUnmarkTx = document.getElementById('modalUnmarkText');
 
     // ── Inicializar input de meta ──
     goalInput.value = goal;
@@ -394,21 +408,58 @@
     // ────────────────────────────────────────────
     function toggleDay(day, btn) {
       if (marked.has(day)) {
-        // Desmarcar este día y todos los posteriores
-        for (let d = day; d <= goal; d++) marked.delete(d);
+        // Retroceder: pedir confirmación antes de desmarcar
+        const lastDay = Math.max(...marked);
+        const loseCount = lastDay - day + 1;
+        modalUnmarkTx.textContent =
+          `Se desmarcarán ${loseCount} día${loseCount > 1 ? 's' : ''} (del ${day} al ${lastDay}). ¿Estás seguro?`;
+
+        modalUnmark.classList.add('open');
+
+        // Guardar qué día se quiere desmarcar para usarlo al confirmar
+        modalUnmark.dataset.pendingDay = day;
+        modalUnmark.dataset.pendingBtn = btn.dataset.day;
       } else {
-        // Marcar todos desde el 1 hasta este día
-        for (let d = 1; d <= day; d++) marked.add(d);
+        // Avanzar: marcar todos desde 1 hasta este día (sin confirmación)
+        applyMark(day, btn);
       }
+    }
 
-      // Animación pop en el día clickeado
-      btn.classList.remove('pop');
-      void btn.offsetWidth; // fuerza reflow para reiniciar animación
-      btn.classList.add('pop');
-
+    function applyMark(day, btn) {
+      for (let d = 1; d <= day; d++) marked.add(d);
+      animatePop(btn);
       save();
       refreshUI();
     }
+
+    function applyUnmark(day) {
+      for (let d = day; d <= goal; d++) marked.delete(d);
+      const btn = document.querySelector(`.day[data-day="${day}"]`);
+      if (btn) animatePop(btn);
+      save();
+      refreshUI();
+    }
+
+    function animatePop(btn) {
+      btn.classList.remove('pop');
+      void btn.offsetWidth;
+      btn.classList.add('pop');
+    }
+
+    // Confirmar retroceso
+    document.getElementById('btnConfirmUnmark').addEventListener('click', () => {
+      const day = parseInt(modalUnmark.dataset.pendingDay, 10);
+      modalUnmark.classList.remove('open');
+      applyUnmark(day);
+    });
+
+    document.getElementById('btnCancelUnmark').addEventListener('click', () => {
+      modalUnmark.classList.remove('open');
+    });
+
+    modalUnmark.addEventListener('click', e => {
+      if (e.target === modalUnmark) modalUnmark.classList.remove('open');
+    });
 
     // ────────────────────────────────────────────
     // Actualizar estadísticas y estilos de la cuadrícula
