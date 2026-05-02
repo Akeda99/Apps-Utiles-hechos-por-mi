@@ -488,6 +488,8 @@ input, select, textarea { font-family: inherit; }
 .spa-ac-item .sub { font-size: 11px; color: var(--ink-4); }
 
 /* === HAMBURGER BUTTON (visible only on mobile) === */
+.spa-sidebar-overlay { display: none; }
+
 .spa-hamburger {
   display: none;
   background: none;
