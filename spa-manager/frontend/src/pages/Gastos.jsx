@@ -132,8 +132,8 @@ export default function Gastos() {
       </div>
 
       {/* KPI + breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '12px 18px 0' }}>
-        <div className="spa-stat" style={{ gridColumn: 'span 1' }}>
+      <div className="spa-kpi-grid">
+        <div className="spa-stat">
           <div className="spa-stat-label">Total gastos</div>
           <div className="spa-stat-value" style={{ color: 'var(--danger)' }}>S/ {total.toFixed(2)}</div>
           <div className="spa-stat-foot">{expenses.length} registros</div>

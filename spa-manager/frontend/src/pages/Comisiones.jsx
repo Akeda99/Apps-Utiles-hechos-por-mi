@@ -87,7 +87,7 @@ export default function Comisiones() {
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: '12px 18px 0' }}>
+      <div className="spa-kpi-grid-3">
         <div className="spa-stat">
           <div className="spa-stat-label">Ingresos totales</div>
           <div className="spa-stat-value">S/ {totalRevenue.toFixed(2)}</div>

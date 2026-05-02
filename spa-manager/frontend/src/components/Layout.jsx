@@ -1,17 +1,18 @@
+import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const adminNav = [
-  { to: '/dashboard',    label: 'Dashboard',    icon: '📊', group: 'Operación' },
-  { to: '/appointments', label: 'Atenciones',   icon: '✂️',  group: 'Operación' },
-  { to: '/schedule',     label: 'Agenda',       icon: '📅', group: 'Operación' },
-  { to: '/employees',    label: 'Empleados',    icon: '👥', group: 'Operación' },
-  { to: '/clients',      label: 'Clientes',     icon: '👤', group: 'Operación' },
-  { to: '/services',     label: 'Servicios',    icon: '💆', group: 'Operación' },
-  { to: '/gastos',       label: 'Gastos',       icon: '💸', group: 'Finanzas' },
-  { to: '/comisiones',   label: 'Comisiones',   icon: '💰', group: 'Finanzas' },
+  { to: '/dashboard',    label: 'Dashboard',      icon: '📊', group: 'Operación' },
+  { to: '/appointments', label: 'Atenciones',     icon: '✂️',  group: 'Operación' },
+  { to: '/schedule',     label: 'Agenda',         icon: '📅', group: 'Operación' },
+  { to: '/employees',    label: 'Empleados',      icon: '👥', group: 'Operación' },
+  { to: '/clients',      label: 'Clientes',       icon: '👤', group: 'Operación' },
+  { to: '/services',     label: 'Servicios',      icon: '💆', group: 'Operación' },
+  { to: '/gastos',       label: 'Gastos',         icon: '💸', group: 'Finanzas' },
+  { to: '/comisiones',   label: 'Comisiones',     icon: '💰', group: 'Finanzas' },
   { to: '/cierre',       label: 'Cierre del día', icon: '🔒', group: 'Finanzas' },
-  { to: '/reports',      label: 'Reportes',     icon: '📈', group: 'Finanzas' },
+  { to: '/reports',      label: 'Reportes',       icon: '📈', group: 'Finanzas' },
 ];
 
 const workerNav = [
@@ -34,6 +35,7 @@ function initials(name = '') {
 export default function Layout() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navItems = isAdmin ? adminNav : workerNav;
   const displayName = user?.employee_name || user?.username || '';
   const roleLabel = isAdmin ? 'Administrador' : 'Empleado';
@@ -43,10 +45,15 @@ export default function Layout() {
     navigate('/login', { replace: true });
   }
 
+  function closeSidebar() { setSidebarOpen(false); }
+
   return (
     <div className="spa-app">
       {/* Topbar */}
       <header className="spa-topbar">
+        <button className="spa-hamburger" onClick={() => setSidebarOpen(v => !v)} aria-label="Menú">
+          ☰
+        </button>
         <div className="spa-brand">
           <span className="spa-brand-mark">S</span>
           <span>
@@ -62,10 +69,7 @@ export default function Layout() {
         <div className="spa-topbar-actions">
           <div className="divider-v" style={{ margin: '0 8px' }} />
           <div className="spa-user-chip">
-            <div
-              className="spa-user-avatar"
-              style={{ background: avatarColor(displayName) }}
-            >
+            <div className="spa-user-avatar" style={{ background: avatarColor(displayName) }}>
               {initials(displayName)}
             </div>
             <div>
@@ -84,8 +88,14 @@ export default function Layout() {
         </div>
       </header>
 
+      {/* Sidebar overlay (mobile) */}
+      <div
+        className={`spa-sidebar-overlay${sidebarOpen ? ' open' : ''}`}
+        onClick={closeSidebar}
+      />
+
       {/* Sidebar */}
-      <aside className="spa-sidebar">
+      <aside className={`spa-sidebar${sidebarOpen ? ' open' : ''}`}>
         {isAdmin ? (
           ['Operación', 'Finanzas'].map(group => {
             const items = navItems.filter(i => i.group === group);
@@ -97,6 +107,7 @@ export default function Layout() {
                     key={item.to}
                     to={item.to}
                     className={({ isActive }) => `spa-nav-item${isActive ? ' active' : ''}`}
+                    onClick={closeSidebar}
                   >
                     <span style={{ fontSize: 15 }}>{item.icon}</span>
                     <span>{item.label}</span>
@@ -113,6 +124,7 @@ export default function Layout() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) => `spa-nav-item${isActive ? ' active' : ''}`}
+                onClick={closeSidebar}
               >
                 <span style={{ fontSize: 15 }}>{item.icon}</span>
                 <span>{item.label}</span>

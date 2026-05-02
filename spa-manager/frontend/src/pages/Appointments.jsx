@@ -227,7 +227,7 @@ export default function Appointments() {
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '12px 18px 0' }}>
+      <div className="spa-kpi-grid">
         <div className="spa-stat">
           <div className="spa-stat-label">Ingresos</div>
           <div className="spa-stat-value">S/ {totalIngresos.toFixed(2)}</div>
@@ -248,7 +248,7 @@ export default function Appointments() {
       </div>
 
       {/* Main content: table + sidebar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: 14, padding: '12px 18px 18px', flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14, padding: '12px 14px 18px', flex: 1, minHeight: 0 }} className="spa-appointments-layout">
         <div className="spa-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="spa-panel-header" style={{ padding: '8px 10px' }}>
             <span className="tiny muted">{rangeFiltered.length} de {appointments.length} registros</span>

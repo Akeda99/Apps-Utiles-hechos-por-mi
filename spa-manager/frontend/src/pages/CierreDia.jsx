@@ -106,7 +106,7 @@ export default function CierreDia() {
         </div>
 
         {/* Summary cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16, marginTop: 14 }}>
+        <div className="spa-kpi-grid" style={{ marginBottom: 16, marginTop: 14 }}>
           <div className="spa-stat">
             <div className="spa-stat-label">Efectivo</div>
             <div className="spa-stat-value">S/ {parseFloat(income.cash || 0).toFixed(2)}</div>
@@ -155,7 +155,7 @@ export default function CierreDia() {
         </div>
 
         {/* Two-column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 14 }}>
+        <div className="spa-two-col">
           {/* Appointments */}
           <div className="spa-panel">
             <div className="spa-panel-header" style={{ padding: '8px 12px' }}>

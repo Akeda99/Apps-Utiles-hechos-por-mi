@@ -105,14 +105,14 @@ function AdminDashboard() {
         <div className="spa-empty"><div className="spa-empty-title">Cargando...</div></div>
       ) : (
         <div style={{ padding: '14px 18px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+          <div className="spa-kpi-grid" style={{ padding: 0 }}>
             <KPI label={`Ingresos — ${periodLabel}`} value={mainValue} />
             <KPI label="Ingresos mes" value={`S/ ${parseFloat(summary?.month || 0).toFixed(2)}`} />
             <KPI label="Atenciones hoy" value={summary?.appointments_today || 0} />
             <KPI label="Empleados" value={employees.length} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div className="spa-two-col">
             <div className="spa-panel">
               <div className="spa-panel-header">
                 <span className="spa-panel-title">Ingresos diarios</span>
@@ -252,14 +252,14 @@ function WorkerDashboard() {
       </div>
 
       <div style={{ padding: '14px 18px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        <div className="spa-kpi-grid" style={{ padding: 0 }}>
           <KPI label="Mis ingresos hoy" value={`S/ ${parseFloat(summary?.today || 0).toFixed(2)}`} />
           <KPI label="Esta semana" value={`S/ ${parseFloat(summary?.week || 0).toFixed(2)}`} />
           <KPI label="Atenciones hoy" value={summary?.appointments_today || 0} />
           <KPI label="Mi comisión hoy" value={`S/ ${parseFloat(summary?.commission_today || 0).toFixed(2)}`} foot="según tu porcentaje" />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="spa-two-col">
           <div className="spa-panel">
             <div className="spa-panel-header">
               <span className="spa-panel-title">Mis atenciones de hoy <span className="muted" style={{ fontWeight: 400 }}>({todayAppts.length})</span></span>
