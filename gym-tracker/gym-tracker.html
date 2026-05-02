@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gym Tracker</title>
+  <style>
+    /* ── Reset y variables ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f0f13;
+      --surface:   #1a1a24;
+      --border:    #2a2a3a;
+      --accent:    #6c63ff;
+      --accent-glow: rgba(108, 99, 255, 0.35);
+      --done:      #22c55e;
+      --done-glow: rgba(34, 197, 94, 0.30);
+      --last:      #f59e0b;
+      --last-glow: rgba(245, 158, 11, 0.40);
+      --text:      #e4e4f0;
+      --muted:     #6b6b8a;
+      --danger:    #ef4444;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Encabezado ── */
+    header {
+      max-width: 900px;
+      margin: 0 auto 28px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--accent), var(--done));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+
+    header p.subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── Estadísticas ── */
+    .stats {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 28px;
+      text-align: center;
+      flex: 1 1 160px;
+      max-width: 220px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .stat-card .label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card.done   .value { color: var(--done); }
+    .stat-card.left   .value { color: var(--accent); }
+    .stat-card.streak .value { color: var(--last); }
+
+    /* ── Barra de progreso ── */
+    .progress-wrap {
+      max-width: 900px;
+      margin: 0 auto 28px;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--done));
+      border-radius: 99px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    .progress-label {
+      text-align: right;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+
+    /* ── Controles superiores ── */
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .goal-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .goal-control label { white-space: nowrap; }
+
+    .goal-control input {
+      width: 72px;
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .goal-control input:focus { border-color: var(--accent); }
+
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn:active { transform: scale(0.96); }
+    .btn:hover  { opacity: 0.85; }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-danger  { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+
+    /* ── Cuadrícula ── */
+    .grid-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+      gap: 7px;
+    }
+
+    /* ── Cada día ── */
+    .day {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+      user-select: none;
+      position: relative;
+    }
+
+    .day:hover:not(.done):not(.last) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* Marcado como completado */
+    .day.done {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: var(--done);
+      color: var(--done);
+    }
+
+    /* Último día marcado */
+    .day.last {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--last);
+      color: var(--last);
+      box-shadow: 0 0 12px var(--last-glow);
+    }
+
+    /* Animación al marcar */
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.22); }
+      70%  { transform: scale(0.92); }
+      100% { transform: scale(1); }
+    }
+
+    .day.pop { animation: pop 0.35s ease forwards; }
+
+    /* ── Modal de confirmación ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 28px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .modal h2 { font-size: 1.2rem; margin-bottom: 10px; }
+    .modal p  { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+
+    .modal-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ── Responsive pequeño ── */
+    @media (max-width: 400px) {
+      .grid { grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 5px; }
+      .day  { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado -->
+  <header>
+    <h1>🏋️ Gym Tracker</h1>
+    <p class="subtitle">Marca cada día que entrenas y mantén tu racha.</p>
+  </header>
+
+  <!-- Estadísticas -->
+  <div class="stats">
+    <div class="stat-card done">
+      <div class="value" id="statDone">0</div>
+      <div class="label">Días completados</div>
+    </div>
+    <div class="stat-card left">
+      <div class="value" id="statLeft">365</div>
+      <div class="label">Días restantes</div>
+    </div>
+    <div class="stat-card streak">
+      <div class="value" id="statStreak">0</div>
+      <div class="label">Racha actual 🔥</div>
+    </div>
+  </div>
+
+  <!-- Barra de progreso -->
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 %</div>
+  </div>
+
+  <!-- Controles -->
+  <div class="controls">
+    <div class="goal-control">
+      <label for="goalInput">Meta de días:</label>
+      <input
+        type="number"
+        id="goalInput"
+        min="1"
+        max="3650"
+        value="365"
+        placeholder="365"
+      />
+      <button class="btn btn-primary" id="btnSetGoal">Aplicar</button>
+    </div>
+    <button class="btn btn-danger" id="btnReset">Reiniciar todo</button>
+  </div>
+
+  <!-- Cuadrícula -->
+  <div class="grid-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- Modal de confirmación de reinicio -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h2>¿Reiniciar progreso?</h2>
+      <p>Se borrarán todos los días marcados. Esta acción no se puede deshacer.</p>
+      <div class="modal-btns">
+        <button class="btn btn-primary" id="btnCancelReset">Cancelar</button>
+        <button class="btn btn-danger" id="btnConfirmReset">Sí, reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Progreso guardado automáticamente en tu navegador.</footer>
+
+  <script>
+    // ── Claves de localStorage ──
+    const KEY_MARKED = 'gymtracker_marked'; // Set de días marcados (números)
+    const KEY_GOAL   = 'gymtracker_goal';   // Meta total de días
+
+    // ── Estado global ──
+    let goal   = parseInt(localStorage.getItem(KEY_GOAL) || '365', 10);
+    let marked = new Set(JSON.parse(localStorage.getItem(KEY_MARKED) || '[]'));
+
+    // ── Referencias al DOM ──
+    const grid         = document.getElementById('grid');
+    const statDone     = document.getElementById('statDone');
+    const statLeft     = document.getElementById('statLeft');
+    const statStreak   = document.getElementById('statStreak');
+    const progressFill = document.getElementById('progressFill');
+    const progressLabel= document.getElementById('progressLabel');
+    const goalInput    = document.getElementById('goalInput');
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    // ── Inicializar input de meta ──
+    goalInput.value = goal;
+
+    // ────────────────────────────────────────────
+    // Construir / reconstruir la cuadrícula
+    // ────────────────────────────────────────────
+    function buildGrid() {
+      grid.innerHTML = '';
+
+      for (let d = 1; d <= goal; d++) {
+        const btn = document.createElement('button');
+        btn.className = 'day';
+        btn.textContent = d;
+        btn.dataset.day = d;
+
+        btn.addEventListener('click', () => toggleDay(d, btn));
+        grid.appendChild(btn);
+      }
+
+      refreshUI();
+    }
+
+    // ────────────────────────────────────────────
+    // Marcar / desmarcar un día
+    // ────────────────────────────────────────────
+    function toggleDay(day, btn) {
+      if (marked.has(day)) {
+        // Desmarcar este día y todos los posteriores
+        for (let d = day; d <= goal; d++) marked.delete(d);
+      } else {
+        // Marcar todos desde el 1 hasta este día
+        for (let d = 1; d <= day; d++) marked.add(d);
+      }
+
+      // Animación pop en el día clickeado
+      btn.classList.remove('pop');
+      void btn.offsetWidth; // fuerza reflow para reiniciar animación
+      btn.classList.add('pop');
+
+      save();
+      refreshUI();
+    }
+
+    // ────────────────────────────────────────────
+    // Actualizar estadísticas y estilos de la cuadrícula
+    // ────────────────────────────────────────────
+    function refreshUI() {
+      const done = marked.size;
+      const left = Math.max(goal - done, 0);
+      const pct  = goal > 0 ? Math.min((done / goal) * 100, 100) : 0;
+
+      // Estadísticas
+      statDone.textContent  = done;
+      statLeft.textContent  = left;
+      statStreak.textContent = calcStreak();
+
+      // Barra
+      progressFill.style.width = pct.toFixed(1) + '%';
+      progressLabel.textContent = pct.toFixed(1) + ' %';
+
+      // Último día marcado
+      const lastDay = marked.size > 0 ? Math.max(...marked) : null;
+
+      // Actualizar clases de cada botón
+      document.querySelectorAll('.day').forEach(btn => {
+        const d = parseInt(btn.dataset.day, 10);
+        const isDone = marked.has(d);
+        const isLast = d === lastDay;
+
+        btn.classList.toggle('done', isDone && !isLast);
+        btn.classList.toggle('last', isLast);
+      });
+    }
+
+    // ────────────────────────────────────────────
+    // Calcular racha actual (días consecutivos desde el máximo)
+    // ────────────────────────────────────────────
+    function calcStreak() {
+      if (marked.size === 0) return 0;
+
+      // Ordenar días marcados de mayor a menor
+      const sorted = [...marked].sort((a, b) => b - a);
+      let streak = 1;
+
+      for (let i = 0; i < sorted.length - 1; i++) {
+        if (sorted[i] - sorted[i + 1] === 1) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+
+      return streak;
+    }
+
+    // ────────────────────────────────────────────
+    // Persistencia
+    // ────────────────────────────────────────────
+    function save() {
+      localStorage.setItem(KEY_MARKED, JSON.stringify([...marked]));
+      localStorage.setItem(KEY_GOAL,   String(goal));
+    }
+
+    // ────────────────────────────────────────────
+    // Cambiar meta de días
+    // ────────────────────────────────────────────
+    document.getElementById('btnSetGoal').addEventListener('click', () => {
+      const val = parseInt(goalInput.value, 10);
+      if (!val || val < 1 || val > 3650) {
+        goalInput.style.borderColor = 'var(--danger)';
+        setTimeout(() => goalInput.style.borderColor = '', 1000);
+        return;
+      }
+      goal = val;
+
+      // Eliminar días marcados que superen la nueva meta
+      for (const d of [...marked]) {
+        if (d > goal) marked.delete(d);
+      }
+
+      save();
+      buildGrid();
+    });
+
+    // ────────────────────────────────────────────
+    // Reiniciar progreso (con confirmación)
+    // ────────────────────────────────────────────
+    document.getElementById('btnReset').addEventListener('click', () => {
+      modalOverlay.classList.add('open');
+    });
+
+    document.getElementById('btnCancelReset').addEventListener('click', () => {
+      modalOverlay.classList.remove('open');
+    });
+
+    document.getElementById('btnConfirmReset').addEventListener('click', () => {
+      marked.clear();
+      save();
+      refreshUI();
+      modalOverlay.classList.remove('open');
+    });
+
+    // Cerrar modal al hacer clic fuera
+    modalOverlay.addEventListener('click', e => {
+      if (e.target === modalOverlay) modalOverlay.classList.remove('open');
+    });
+
+    // ── Arrancar ──
+    buildGrid();
+  </script>
+</body>
+</html>
