@@ -1,60 +1,47 @@
+<p align="right">
+  <a href="#english">English</a> · <a href="#español">Español</a>
+</p>
+
+---
+
+## Español
+
 # MamiSalud
 
-Aplicación móvil de salud materna para gestantes adolescentes de la región Ucayali, Perú.
+Aplicación móvil de salud materna para gestantes adolescentes de la región Ucayali, Perú.  
 Desarrollada con Flutter · Diseñada para uso en postas y hospitales del MINSA.
 
----
+### Pantallas y funcionalidades
 
-## Pantallas y funcionalidades
+**Inicio (Home)**
+- Tarjeta de bienvenida con nombre de la gestante y semanas de gestación actuales.
+- Tamaño del bebé por semana comparado con frutas y objetos cotidianos (semanas 4–40).
+- Tip del día: 40 consejos de salud materna regionalizados para Ucayali.
 
-### Inicio (Home)
-- Tarjeta de bienvenida personalizada con el nombre de la gestante y las semanas de gestación actuales.
-- **Tamaño del bebé por semana**: compara el bebé con frutas y objetos cotidianos (semana 4 a 40), mostrando también el tamaño aproximado en centímetros.
-- **Tip del día**: 40 consejos de salud materna regionalizados para Ucayali que rotan diariamente según el día del año y las semanas de gestación de cada paciente.
-- Accesos directos a las secciones principales de la app.
+**Chatbot — "Mami-bot"**
+Asistente con árbol de decisión regionalizado para la Amazonía peruana:
+- Alimentación con proteínas y frutas locales (paiche, aguaje, camu camu, pijuayo).
+- Vitaminas y suplementos gratuitos en puestos de salud de Pucallpa.
+- Señales de alarma con referencia al Hospital Regional de Pucallpa.
+- Prevención de dengue, malaria y Zika durante el embarazo.
 
-### Chatbot — "Mami-bot"
-Asistente conversacional con árbol de decisión que responde preguntas frecuentes sobre el embarazo, **regionalizado para Ucayali**:
-- **Alimentación**: proteínas locales (paiche, boquichico, palometa, sábalos), verduras amazónicas (sachaculantro, shapumba, cocona), tubérculos (yuca, plátano).
-- **Comidas típicas**: guía nutricional de patarashca, inchicapi, tacacho con cecina y juane de gallina.
-- **Frutas amazónicas**: aguaje (vitamina A), camu camu (vitamina C), pijuayo (betacaroteno), ungurahui (ácidos grasos).
-- **Qué NO comer**: chicha fermentada, masato fermentado, ceviche de pescado crudo, carne de monte poco cocida, plantas medicinales sin consultar.
-- **Vitaminas y suplementos**: relaciona cada suplemento con fuentes locales; recuerda que ácido fólico, hierro y calcio son gratuitos en los puestos de salud de Pucallpa.
-- **Agua e hidratación**: recomienda 10 vasos/día por el calor amazónico, advierte sobre agua de río sin tratar.
-- **Señales de alarma**: menciona el Hospital Regional de Pucallpa y promotores de salud en comunidades alejadas.
-- **Dengue, malaria y Zika**: síntomas, prevención (mosquitero, ropa protectora, eliminar agua estancada) y alerta de fiebre durante el embarazo.
-- **Cuidados con el calor amazónico**: descanso entre 12–3 pm, ropa de algodón, señales de golpe de calor.
-- **Bebé semana a semana**: comparaciones de tamaño con frutas locales (semilla de aguaje, plátano de isla, piña pequeña).
-- **Controles prenatales**: calendario completo con recordatorio de que son gratuitos en MINSA Ucayali.
+**Señales de Alarma**
+- Listado visual con filtro por urgencia (URGENTE / AVISA).
+- Botón de emergencia para llamar al médico.
 
-### Señales de Alarma
-- Listado visual de señales de peligro durante el embarazo, organizadas por urgencia.
-- Filtro por categoría: Todas / Urgente / Avisa.
-- Tarjetas con badge de color (URGENTE en coral, AVISA en amarillo).
-- Botón de emergencia con acceso rápido para llamar al médico.
-
-### Controles Prenatales
-- Registro de controles prenatales realizados con fecha, semanas de gestación, peso y observaciones.
-- Deslizar una tarjeta hacia la izquierda para eliminarla.
+**Controles Prenatales**
+- Registro con fecha, semanas, peso y observaciones.
 - Formulario para añadir nuevos controles.
 
-### Calculadora Gestacional
-- Ingresa la fecha de la última regla (FUR) y calcula automáticamente:
-  - Semanas y días de gestación actuales.
-  - Trimestre en curso con rango de semanas.
-  - Fecha probable de parto (FPP).
-  - Próximo control sugerido según protocolo MINSA.
-- Botón **"Guardar en mi perfil"** para actualizar la FUR directamente en el perfil de la paciente.
+**Calculadora Gestacional**
+- Calcula semanas, trimestre, FPP y próximo control desde la FUR.
+- Botón para guardar la FUR directamente en el perfil.
 
-### Mi Perfil
-- Datos de la gestante: nombre, semanas de gestación, hospital y médico/obstetra tratante.
-- Tarjeta resumen con conteo de controles registrados, citas pendientes y días hasta el parto.
-- Información de FUR y FPP actualizada en tiempo real.
-- **Edición de perfil**: hoja deslizable para actualizar nombre, FUR (con recalculo automático de semanas), hospital y doctor.
+**Mi Perfil**
+- Datos de la gestante, hospital y médico/obstetra tratante.
+- Edición deslizable con recalculo automático de semanas.
 
----
-
-## Stack técnico
+### Stack
 
 | Capa | Tecnología |
 |---|---|
@@ -62,26 +49,63 @@ Asistente conversacional con árbol de decisión que responde preguntas frecuent
 | Estado | Provider + ChangeNotifier |
 | Base de datos local | sqflite (SQLite) |
 | Tipografía | Google Fonts — Nunito + Quicksand |
-| Navegación | IndexedStack con 4 tabs |
 
----
-
-## Diseño
-
-- Paleta: rosas (`pink50`–`pink500`), menta (`mint50`–`mint600`), coral para alertas, crema de fondo.
-- Diseño accesible y cálido pensado para usuarias adolescentes.
-- Todos los textos en español peruano con terminología del MINSA.
-
----
-
-## Contexto
+### Contexto
 
 Desarrollado para la **Universidad Nacional de Ucayali (UNU)** como herramienta de apoyo al programa de salud materna en gestantes adolescentes de Pucallpa y comunidades de la región Ucayali.
 
 ---
 
-## Licencia y autoría
+## English
 
-© 2026 Ray Cardenas. Todos los derechos reservados.
+# MamiSalud
 
-MamiSalud es un proyecto original desarrollado por Ray Cardenas para la Universidad Nacional de Ucayali (UNU), Pucallpa, Perú. Queda prohibida su reproducción, distribución o modificación sin autorización expresa del autor.
+Mobile maternal health app for adolescent pregnant women in the Ucayali region, Peru.  
+Built with Flutter · Designed for use in MINSA health posts and hospitals.
+
+### Screens and features
+
+**Home**
+- Personalized welcome card with the patient's name and current gestational weeks.
+- Baby size by week compared to local fruits and everyday objects (weeks 4–40).
+- Daily tip: 40 maternal health tips regionalized for Ucayali.
+
+**Chatbot — "Mami-bot"**
+Decision-tree assistant adapted for the Peruvian Amazon:
+- Nutrition with local proteins and fruits (paiche, aguaje, camu camu, pijuayo).
+- Free vitamins and supplements available at Pucallpa health posts.
+- Danger signs referencing the Regional Hospital of Pucallpa.
+- Dengue, malaria, and Zika prevention during pregnancy.
+
+**Danger Signs**
+- Visual list filtered by urgency (URGENT / ALERT).
+- Emergency button to call the doctor.
+
+**Prenatal Visits**
+- Log with date, weeks, weight, and notes.
+- Form to add new visits.
+
+**Gestational Calculator**
+- Calculates weeks, trimester, EDD, and next visit from LMP.
+- Button to save LMP directly to the patient profile.
+
+**My Profile**
+- Patient data, hospital, and attending doctor/obstetrician.
+- Slide-up edit sheet with automatic week recalculation.
+
+### Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Flutter (Dart) |
+| State management | Provider + ChangeNotifier |
+| Local database | sqflite (SQLite) |
+| Typography | Google Fonts — Nunito + Quicksand |
+
+### Context
+
+Developed for **Universidad Nacional de Ucayali (UNU)** as a support tool for the maternal health program serving adolescent pregnant women in Pucallpa and communities across the Ucayali region.
+
+---
+
+© 2026 Ray Cardenas. All rights reserved.
