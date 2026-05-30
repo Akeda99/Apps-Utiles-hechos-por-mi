@@ -1,0 +1,32 @@
+name: materna_app
+description: App de salud para gestantes adolescentes - UNU Ucayali
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  provider: ^6.1.2
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+  shared_preferences: ^2.3.2
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
+  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

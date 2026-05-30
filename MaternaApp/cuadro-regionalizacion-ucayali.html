@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Regionalización Chatbot — Ucayali</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #FFF5F8;
+      padding: 40px 32px;
+      color: #3F2E37;
+    }
+
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 36px 40px;
+      max-width: 860px;
+      margin: 0 auto;
+      box-shadow: 0 8px 32px rgba(192, 99, 132, 0.12), 0 2px 4px rgba(192, 99, 132, 0.06);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #FFE5EC;
+    }
+
+    .header-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #FF94B0, #F06A8E);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+      box-shadow: 0 6px 16px rgba(240, 106, 142, 0.35);
+    }
+
+    .header-text h1 {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #3F2E37;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 13px;
+      font-weight: 600;
+      color: #A89AA1;
+      margin-top: 3px;
+    }
+
+    .badge {
+      margin-left: auto;
+      background: #DEF4E8;
+      color: #4FAA82;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    thead tr th {
+      background: #FFF5F8;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #F06A8E;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    thead tr th:first-child {
+      border-radius: 12px 0 0 12px;
+      width: 220px;
+    }
+    thead tr th:last-child {
+      border-radius: 0 12px 12px 0;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #FFF5F8;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
+      background: #FFFCFD;
+    }
+
+    tbody td {
+      padding: 14px 16px;
+      vertical-align: top;
+      font-size: 13.5px;
+      line-height: 1.55;
+      border-bottom: 1px solid #FFF5F8;
+    }
+
+    /* Section pill */
+    .section-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill-food    { background: #DEF4E8; color: #4FAA82; }
+    .pill-alert   { background: #FFE2E6; color: #FF7E91; }
+    .pill-new     { background: #F1EAFB; color: #7A5BB0; }
+    .pill-water   { background: #EAF5FC; color: #3A8FB5; }
+    .pill-symptom { background: #FFF3DC; color: #B07419; }
+    .pill-care    { background: #FFE5EC; color: #F06A8E; }
+    .pill-baby    { background: #DEF4E8; color: #4FAA82; }
+
+    /* Change text */
+    .changes {
+      color: #3F2E37;
+      font-weight: 600;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #FFF5F8;
+      border: 1.5px solid #FFB6CC;
+      color: #F06A8E;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin: 2px 2px 2px 0;
+      letter-spacing: 0.3px;
+    }
+
+    .tag-new {
+      background: #F1EAFB;
+      border-color: #D6C2EE;
+      color: #7A5BB0;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 2px solid #FFE5EC;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4FAA82;
+      flex-shrink: 0;
+    }
+
+    .footer p {
+      font-size: 12px;
+      font-weight: 600;
+      color: #A89AA1;
+    }
+
+    .footer strong {
+      color: #4FAA82;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-icon">🌿</div>
+      <div class="header-text">
+        <h1>Regionalización del Chatbot — Ucayali</h1>
+        <p>MaternaApp · Cambios aplicados al árbol de conversación</p>
+      </div>
+      <div class="badge">🦜 Pucallpa, Perú</div>
+    </div>
+
+    <!-- Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Sección</th>
+          <th>Cambios realizados</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-alert">🚨 Señales de alarma</span>
+          </td>
+          <td class="changes">
+            Menciona el <span class="tag">Hospital Regional de Pucallpa</span> y los promotores de salud en comunidades alejadas.
+            Agrega alerta especial por <span class="tag">malaria</span>, <span class="tag">dengue</span> y
+            <span class="tag">Zika</span> en el contexto de fiebre durante el embarazo.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-food">✅ ¿Qué debo comer?</span>
+          </td>
+          <td class="changes">
+            Incluye proteínas locales: <span class="tag">paiche</span> <span class="tag">boquichico</span> <span class="tag">palometa</span> <span class="tag">sábalos</span>.
+            Verduras amazónicas: <span class="tag">sachaculantro</span> <span class="tag">shapumba</span> <span class="tag">cocona</span>.
+            Tubérculos base: <span class="tag">yuca</span> <span class="tag">plátano</span>.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-new">🐟 Comidas típicas</span>
+            <div style="margin-top:6px"><span class="tag tag-new">✦ Nodo nuevo</span></div>
+          </td>
+          <td class="changes">
+            Guía nutricional de platos regionales:
+            <span class="tag">patarashca</span> (proteína alta, bajo en grasa),
+            <span class="tag">inchicapi</span> (maní con ácido fólico),
+            <span class="tag">tacacho con cecina</span> (potasio, con moderación),
+            <span class="tag">juane de gallina</span> (proteína + carbohidratos balanceado).
+            Indica qué preparaciones son seguras y cuáles evitar.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-new">🌿 Frutas amazónicas</span>
+            <div style="margin-top:6px"><span class="tag tag-new">✦ Nodo nuevo</span></div>
+          </td>
+          <td class="changes">
+            <span class="tag">Aguaje</span> → vitamina A (ojos y piel del bebé) ·
+            <span class="tag">Camu camu</span> → vitamina C más alta del mundo, mejora absorción de hierro ·
+            <span class="tag">Pijuayo</span> → betacaroteno y energía ·
+            <span class="tag">Cocona</span> → digestión e inmunidad ·
+            <span class="tag">Ungurahui</span> → ácidos grasos.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-alert">❌ ¿Qué NO comer?</span>
+          </td>
+          <td class="changes">
+            Agrega advertencias específicas de Ucayali:
+            <span class="tag">chicha fermentada</span> y <span class="tag">masato fermentado</span> (alcohol),
+            <span class="tag">ceviche de pescado crudo</span> (riesgo de parásitos amazónicos),
+            <span class="tag">carne de monte poco cocida</span> (majaz, sajino, venado),
+            <span class="tag">plantas medicinales</span> amazónicas sin consultar a la obstetra.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-food">💊 Vitaminas</span>
+          </td>
+          <td class="changes">
+            Relaciona cada vitamina con fuentes locales: <span class="tag">camu camu</span> para absorber el hierro,
+            <span class="tag">aguaje + pijuayo</span> para vitamina A.
+            Recuerda que el ácido fólico, hierro y calcio son <strong style="color:#4FAA82">gratuitos</strong> en los puestos de salud de Pucallpa.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-water">💧 Agua e hidratación</span>
+          </td>
+          <td class="changes">
+            Aumenta la recomendación a <strong>10 vasos/día</strong> por el calor amazónico.
+            Advierte sobre el <span class="tag">agua de río o pozo sin tratar</span> (riesgo de parásitos).
+            Sugiere alternativas locales seguras: jugos de <span class="tag">camu camu</span>, <span class="tag">cocona</span>, <span class="tag">aguajina natural</span>.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-symptom">🦟 Dengue / Malaria / Zika</span>
+            <div style="margin-top:6px"><span class="tag tag-new">✦ Nodo nuevo</span></div>
+          </td>
+          <td class="changes">
+            Señales de cada enfermedad tropical durante el embarazo. Guía de prevención:
+            <span class="tag">mosquitero</span>, <span class="tag">ropa protectora</span>, eliminar agua estancada,
+            repelente seguro en embarazo. Alerta: fiebre = ir al médico de inmediato.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-care">☀️ Cuidados con el calor</span>
+            <div style="margin-top:6px"><span class="tag tag-new">✦ Nodo nuevo</span></div>
+          </td>
+          <td class="changes">
+            Consejos para el clima amazónico: descanso entre <strong>12–3 pm</strong>,
+            ropa clara de algodón, ventilación del hogar, señales de
+            <span class="tag">golpe de calor</span> que requieren ir al médico.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="section-pill pill-baby">👶 Mi bebé semana a semana</span>
+          </td>
+          <td class="changes">
+            Comparaciones de tamaño con frutas locales: <span class="tag">semilla de aguaje</span>,
+            <span class="tag">plátano de isla</span>, <span class="tag">piña pequeña</span>.
+            Nodo nuevo: <strong>¿Cuántos controles debo tener?</strong>
+            con calendario completo y recordatorio de que son
+            <strong style="color:#4FAA82">gratuitos en MINSA Ucayali</strong>.
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-dot"></div>
+      <p>
+        <strong>3 nodos nuevos añadidos</strong> · 7 nodos existentes regionalizados ·
+        Fuente: MINSA Perú, bibliografía nutricional amazónica · MaternaApp — UNU Ucayali
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

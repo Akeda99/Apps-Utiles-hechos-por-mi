@@ -1,0 +1,190 @@
+/* MamiSalud — design tokens */
+:root {
+  --pink-50:  #FFF5F8;
+  --pink-100: #FFE5EC;
+  --pink-150: #FFD4DF;
+  --pink-200: #FFB6CC;
+  --pink-400: #FF94B0;
+  --pink-500: #F06A8E;
+
+  --mint-50:  #F1FAF5;
+  --mint-100: #DEF4E8;
+  --mint-200: #B8E8CD;
+  --mint-400: #8FD9B6;
+  --mint-600: #4FAA82;
+
+  --cream:    #FFFCFD;
+  --cream-2:  #FFF8FA;
+
+  --ink:        #3F2E37;
+  --ink-soft:   #6E5B65;
+  --ink-faint:  #A89AA1;
+  --line:       #F2DDE4;
+
+  --coral:    #FF7E91;
+  --coral-50: #FFE2E6;
+  --sun:      #FFC971;
+  --sun-50:   #FFF3DC;
+  --sky:      #BCE0F5;
+  --sky-50:   #EAF5FC;
+  --lilac:    #D6C2EE;
+  --lilac-50: #F1EAFB;
+
+  --shadow-card: 0 6px 18px rgba(192, 99, 132, 0.08), 0 1px 2px rgba(192, 99, 132, 0.04);
+  --shadow-pop:  0 14px 32px rgba(192, 99, 132, 0.18);
+
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 24px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+}
+
+* { box-sizing: border-box; }
+
+body, html {
+  margin: 0;
+  background: #FBE7EF;
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--ink);
+}
+
+.ms-screen {
+  background: var(--cream);
+  height: 100%;
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--ink);
+  overflow-y: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ms-screen h1, .ms-screen h2, .ms-screen h3, .ms-screen .display {
+  font-family: 'Quicksand', system-ui, sans-serif;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.ms-screen p { margin: 0; }
+
+/* Soft card */
+.ms-card {
+  background: white;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* Pill buttons */
+.ms-pill {
+  border-radius: var(--r-pill);
+  border: none;
+  padding: 12px 18px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ms-pill.primary { background: var(--pink-400); color: white; }
+.ms-pill.ghost   { background: var(--pink-50); color: var(--pink-500); }
+.ms-pill.mint    { background: var(--mint-200); color: var(--mint-600); }
+
+/* Top bar custom */
+.ms-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 6px;
+  background: var(--cream);
+}
+
+/* Bottom tabs */
+.ms-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+  padding: 8px 12px 14px;
+  background: white;
+  border-top: 1px solid var(--line);
+}
+.ms-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  padding: 8px 4px 4px;
+  border-radius: 16px;
+}
+.ms-tab.active { color: var(--pink-500); background: var(--pink-50); }
+
+/* Status chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.chip-mint  { background: var(--mint-100); color: var(--mint-600); }
+.chip-pink  { background: var(--pink-100); color: var(--pink-500); }
+.chip-coral { background: var(--coral-50); color: var(--coral); }
+.chip-sun   { background: var(--sun-50);  color: #B07419; }
+
+/* Field */
+.field {
+  background: var(--pink-50);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  border: 1.5px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field.focused {
+  background: white;
+  border-color: var(--pink-200);
+  box-shadow: 0 0 0 4px var(--pink-50);
+}
+.field label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--pink-500);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.field .value {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Bubble for chatbot */
+.bubble {
+  max-width: 78%;
+  padding: 12px 14px;
+  border-radius: 22px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.bubble.bot {
+  background: var(--mint-100);
+  color: var(--ink);
+  border-bottom-left-radius: 6px;
+}
+.bubble.me {
+  background: var(--pink-400);
+  color: white;
+  border-bottom-right-radius: 6px;
+  align-self: flex-end;
+  font-weight: 700;
+}
+
+/* Hide scrollbar in tiny screens */
+.ms-screen::-webkit-scrollbar { width: 0; height: 0; }
