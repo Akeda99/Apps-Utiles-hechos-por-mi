@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gym Tracker</title>
+  <title>Activity Tracker</title>
   <style>
     /* ── Reset y variables ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,7 +35,7 @@
     /* ── Encabezado ── */
     header {
       max-width: 900px;
-      margin: 0 auto 28px;
+      margin: 0 auto 20px;
       text-align: center;
     }
 
@@ -54,6 +54,89 @@
       color: var(--muted);
       font-size: 0.9rem;
     }
+
+    /* ── Barra de actividades ── */
+    .activity-bar {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .activity-bar::-webkit-scrollbar { display: none; }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 99px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .tab:hover { border-color: var(--accent); color: var(--text); }
+
+    .tab.active {
+      background: rgba(108, 99, 255, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .tab-delete {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.2s, background 0.2s;
+      margin-left: 2px;
+      flex-shrink: 0;
+    }
+
+    .tab-delete:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .btn-add-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px dashed var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s;
+      line-height: 1;
+    }
+
+    .btn-add-tab:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ── Estadísticas ── */
     .stats {
@@ -208,14 +291,12 @@
       color: var(--text);
     }
 
-    /* Marcado como completado */
     .day.done {
       background: rgba(34, 197, 94, 0.12);
       border-color: var(--done);
       color: var(--done);
     }
 
-    /* Último día marcado */
     .day.last {
       background: rgba(245, 158, 11, 0.15);
       border-color: var(--last);
@@ -223,7 +304,6 @@
       box-shadow: 0 0 12px var(--last-glow);
     }
 
-    /* Animación al marcar */
     @keyframes pop {
       0%   { transform: scale(1); }
       40%  { transform: scale(1.22); }
@@ -233,7 +313,7 @@
 
     .day.pop { animation: pop 0.35s ease forwards; }
 
-    /* ── Modal de confirmación ── */
+    /* ── Modales ── */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -265,6 +345,34 @@
       justify-content: center;
     }
 
+    /* ── Form nueva actividad ── */
+    .activity-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .activity-form input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 9px 12px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .activity-form input:focus { border-color: var(--accent); }
+
+    #activityEmoji {
+      width: 58px;
+      text-align: center;
+      font-size: 1.3rem;
+    }
+
+    #activityName { flex: 1; }
+
     /* ── Footer ── */
     footer {
       text-align: center;
@@ -273,7 +381,7 @@
       color: var(--muted);
     }
 
-    /* ── Responsive pequeño ── */
+    /* ── Responsive ── */
     @media (max-width: 400px) {
       .grid { grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 5px; }
       .day  { font-size: 0.65rem; }
@@ -284,9 +392,14 @@
 
   <!-- Encabezado -->
   <header>
-    <h1>🏋️ Gym Tracker</h1>
-    <p class="subtitle">Marca cada día que entrenas y mantén tu racha.</p>
+    <h1 id="headerTitle">🏋️ Gym Tracker</h1>
+    <p class="subtitle" id="headerSubtitle">Marca cada día que entrenas y mantén tu racha.</p>
   </header>
+
+  <!-- Barra de actividades -->
+  <div class="activity-bar" id="activityBar">
+    <button class="btn-add-tab" id="btnAddActivity" title="Nueva actividad">+</button>
+  </div>
 
   <!-- Estadísticas -->
   <div class="stats">
@@ -316,14 +429,7 @@
   <div class="controls">
     <div class="goal-control">
       <label for="goalInput">Meta de días:</label>
-      <input
-        type="number"
-        id="goalInput"
-        min="1"
-        max="3650"
-        value="365"
-        placeholder="365"
-      />
+      <input type="number" id="goalInput" min="1" max="3650" value="365" placeholder="365" />
       <button class="btn btn-primary" id="btnSetGoal">Aplicar</button>
     </div>
     <button class="btn btn-danger" id="btnReset">Reiniciar todo</button>
@@ -334,11 +440,11 @@
     <div class="grid" id="grid"></div>
   </div>
 
-  <!-- Modal de confirmación de reinicio -->
+  <!-- Modal: confirmar reinicio -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <h2>¿Reiniciar progreso?</h2>
-      <p>Se borrarán todos los días marcados. Esta acción no se puede deshacer.</p>
+      <p>Se borrarán todos los días marcados de esta actividad. Esta acción no se puede deshacer.</p>
       <div class="modal-btns">
         <button class="btn btn-primary" id="btnCancelReset">Cancelar</button>
         <button class="btn btn-danger" id="btnConfirmReset">Sí, reiniciar</button>
@@ -346,7 +452,7 @@
     </div>
   </div>
 
-  <!-- Modal de confirmación al desmarcar días -->
+  <!-- Modal: confirmar desmarcar días -->
   <div class="modal-overlay" id="modalUnmark">
     <div class="modal">
       <h2>¿Retroceder progreso?</h2>
@@ -358,35 +464,230 @@
     </div>
   </div>
 
+  <!-- Modal: eliminar actividad -->
+  <div class="modal-overlay" id="modalDeleteActivity">
+    <div class="modal">
+      <h2>¿Eliminar actividad?</h2>
+      <p id="modalDeleteText"></p>
+      <div class="modal-btns">
+        <button class="btn btn-primary" id="btnCancelDelete">Cancelar</button>
+        <button class="btn btn-danger" id="btnConfirmDelete">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: nueva actividad -->
+  <div class="modal-overlay" id="modalActivity">
+    <div class="modal">
+      <h2>Nueva actividad</h2>
+      <p>Elige un emoji y un nombre para lo que quieres trackear.</p>
+      <div class="activity-form">
+        <input type="text" id="activityEmoji" maxlength="4" placeholder="🏊" />
+        <input type="text" id="activityName" maxlength="24" placeholder="Nombre" />
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-primary" id="btnSaveActivity">Guardar</button>
+        <button class="btn btn-danger" id="btnCancelActivity">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <footer>Progreso guardado automáticamente en tu navegador.</footer>
 
   <script>
-    // ── Claves de localStorage ──
-    const KEY_MARKED = 'gymtracker_marked'; // Set de días marcados (números)
-    const KEY_GOAL   = 'gymtracker_goal';   // Meta total de días
+    // ── Claves localStorage ──
+    const KEY_ACTIVITIES = 'gymtracker_activities';
+    const KEY_ACTIVE     = 'gymtracker_active';
+
+    // ── Migración de datos v1 → v2 ──
+    function loadActivities() {
+      const stored = localStorage.getItem(KEY_ACTIVITIES);
+      if (stored) return JSON.parse(stored);
+
+      // Migrar datos del tracker original
+      const oldMarked = localStorage.getItem('gymtracker_marked');
+      const oldGoal   = localStorage.getItem('gymtracker_goal');
+
+      const initial = [{
+        id:     'gym',
+        name:   'Gym',
+        emoji:  '🏋️',
+        goal:   parseInt(oldGoal || '365', 10),
+        marked: JSON.parse(oldMarked || '[]')
+      }];
+
+      if (oldMarked !== null) {
+        localStorage.removeItem('gymtracker_marked');
+        localStorage.removeItem('gymtracker_goal');
+      }
+
+      saveActivities(initial);
+      return initial;
+    }
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function saveActivities(data) {
+      localStorage.setItem(KEY_ACTIVITIES, JSON.stringify(data ?? activities));
+    }
 
     // ── Estado global ──
-    let goal   = parseInt(localStorage.getItem(KEY_GOAL) || '365', 10);
-    let marked = new Set(JSON.parse(localStorage.getItem(KEY_MARKED) || '[]'));
+    let activities = loadActivities();
+    let activeId   = localStorage.getItem(KEY_ACTIVE) || activities[0].id;
 
-    // ── Referencias al DOM ──
-    const grid         = document.getElementById('grid');
-    const statDone     = document.getElementById('statDone');
-    const statLeft     = document.getElementById('statLeft');
-    const statStreak   = document.getElementById('statStreak');
-    const progressFill = document.getElementById('progressFill');
-    const progressLabel= document.getElementById('progressLabel');
-    const goalInput    = document.getElementById('goalInput');
+    if (!activities.find(a => a.id === activeId)) activeId = activities[0].id;
+
+    function getActive() {
+      return activities.find(a => a.id === activeId) || activities[0];
+    }
+
+    let goal   = getActive().goal;
+    let marked = new Set(getActive().marked);
+
+    // ── DOM refs ──
+    const grid          = document.getElementById('grid');
+    const statDone      = document.getElementById('statDone');
+    const statLeft      = document.getElementById('statLeft');
+    const statStreak    = document.getElementById('statStreak');
+    const progressFill  = document.getElementById('progressFill');
+    const progressLabel = document.getElementById('progressLabel');
+    const goalInput     = document.getElementById('goalInput');
+    const activityBar   = document.getElementById('activityBar');
     const modalOverlay  = document.getElementById('modalOverlay');
     const modalUnmark   = document.getElementById('modalUnmark');
     const modalUnmarkTx = document.getElementById('modalUnmarkText');
+    const modalDelAct   = document.getElementById('modalDeleteActivity');
+    const modalDelText  = document.getElementById('modalDeleteText');
+    const modalActivity = document.getElementById('modalActivity');
+    const emojiInput    = document.getElementById('activityEmoji');
+    const nameInput     = document.getElementById('activityName');
+    const headerTitle   = document.getElementById('headerTitle');
+    const headerSub     = document.getElementById('headerSubtitle');
 
-    // ── Inicializar input de meta ──
     goalInput.value = goal;
 
-    // ────────────────────────────────────────────
-    // Construir / reconstruir la cuadrícula
-    // ────────────────────────────────────────────
+    // ── Tabs ──
+    function buildTabs() {
+      activityBar.querySelectorAll('.tab').forEach(t => t.remove());
+      const addBtn = document.getElementById('btnAddActivity');
+
+      activities.forEach(act => {
+        const tab = document.createElement('button');
+        tab.className = 'tab' + (act.id === activeId ? ' active' : '');
+        tab.dataset.id = act.id;
+
+        const label = document.createElement('span');
+        label.textContent = act.emoji + ' ' + act.name;
+        tab.appendChild(label);
+
+        if (activities.length > 1) {
+          const del = document.createElement('button');
+          del.className = 'tab-delete';
+          del.textContent = '×';
+          del.title = 'Eliminar';
+          del.addEventListener('click', e => {
+            e.stopPropagation();
+            requestDeleteActivity(act.id);
+          });
+          tab.appendChild(del);
+        }
+
+        tab.addEventListener('click', () => switchActivity(act.id));
+        activityBar.insertBefore(tab, addBtn);
+      });
+
+      // Actualizar encabezado
+      const current = getActive();
+      headerTitle.textContent = current.emoji + ' ' + current.name + ' Tracker';
+      headerSub.textContent   = 'Marca cada día que lo haces y mantén tu racha.';
+    }
+
+    // ── Cambiar actividad activa ──
+    function switchActivity(id) {
+      activeId = id;
+      localStorage.setItem(KEY_ACTIVE, activeId);
+
+      const act  = getActive();
+      goal       = act.goal;
+      marked     = new Set(act.marked);
+      goalInput.value = goal;
+
+      buildTabs();
+      buildGrid();
+    }
+
+    // ── Confirmar eliminar actividad ──
+    let pendingDeleteId = null;
+
+    function requestDeleteActivity(id) {
+      const act = activities.find(a => a.id === id);
+      if (!act) return;
+      pendingDeleteId = id;
+      modalDelText.textContent =
+        `Se eliminará "${act.emoji} ${act.name}" y todo su progreso. Esta acción no se puede deshacer.`;
+      modalDelAct.classList.add('open');
+    }
+
+    document.getElementById('btnConfirmDelete').addEventListener('click', () => {
+      if (!pendingDeleteId) return;
+      activities = activities.filter(a => a.id !== pendingDeleteId);
+      saveActivities();
+      modalDelAct.classList.remove('open');
+
+      if (activeId === pendingDeleteId) activeId = activities[0].id;
+      pendingDeleteId = null;
+      switchActivity(activeId);
+    });
+
+    document.getElementById('btnCancelDelete').addEventListener('click', () => {
+      pendingDeleteId = null;
+      modalDelAct.classList.remove('open');
+    });
+
+    modalDelAct.addEventListener('click', e => {
+      if (e.target === modalDelAct) modalDelAct.classList.remove('open');
+    });
+
+    // ── Agregar actividad ──
+    document.getElementById('btnAddActivity').addEventListener('click', () => {
+      emojiInput.value = '';
+      nameInput.value  = '';
+      modalActivity.classList.add('open');
+      setTimeout(() => nameInput.focus(), 50);
+    });
+
+    document.getElementById('btnSaveActivity').addEventListener('click', () => {
+      const emoji = emojiInput.value.trim() || '⚡';
+      const name  = nameInput.value.trim();
+
+      if (!name) {
+        nameInput.style.borderColor = 'var(--danger)';
+        setTimeout(() => nameInput.style.borderColor = '', 1000);
+        return;
+      }
+
+      const newAct = { id: uid(), name, emoji, goal: 365, marked: [] };
+      activities.push(newAct);
+      saveActivities();
+      modalActivity.classList.remove('open');
+      switchActivity(newAct.id);
+    });
+
+    document.getElementById('btnCancelActivity').addEventListener('click', () => {
+      modalActivity.classList.remove('open');
+    });
+
+    modalActivity.addEventListener('click', e => {
+      if (e.target === modalActivity) modalActivity.classList.remove('open');
+    });
+
+    nameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btnSaveActivity').click();
+    });
+
+    // ── Cuadrícula ──
     function buildGrid() {
       grid.innerHTML = '';
 
@@ -395,7 +696,6 @@
         btn.className = 'day';
         btn.textContent = d;
         btn.dataset.day = d;
-
         btn.addEventListener('click', () => toggleDay(d, btn));
         grid.appendChild(btn);
       }
@@ -403,24 +703,16 @@
       refreshUI();
     }
 
-    // ────────────────────────────────────────────
-    // Marcar / desmarcar un día
-    // ────────────────────────────────────────────
+    // ── Marcar / desmarcar ──
     function toggleDay(day, btn) {
       if (marked.has(day)) {
-        // Retroceder: pedir confirmación antes de desmarcar
-        const lastDay = Math.max(...marked);
+        const lastDay  = Math.max(...marked);
         const loseCount = lastDay - day + 1;
         modalUnmarkTx.textContent =
           `Se desmarcarán ${loseCount} día${loseCount > 1 ? 's' : ''} (del ${day} al ${lastDay}). ¿Estás seguro?`;
-
         modalUnmark.classList.add('open');
-
-        // Guardar qué día se quiere desmarcar para usarlo al confirmar
         modalUnmark.dataset.pendingDay = day;
-        modalUnmark.dataset.pendingBtn = btn.dataset.day;
       } else {
-        // Avanzar: marcar todos desde 1 hasta este día (sin confirmación)
         applyMark(day, btn);
       }
     }
@@ -446,7 +738,6 @@
       btn.classList.add('pop');
     }
 
-    // Confirmar retroceso
     document.getElementById('btnConfirmUnmark').addEventListener('click', () => {
       const day = parseInt(modalUnmark.dataset.pendingDay, 10);
       modalUnmark.classList.remove('open');
@@ -461,69 +752,50 @@
       if (e.target === modalUnmark) modalUnmark.classList.remove('open');
     });
 
-    // ────────────────────────────────────────────
-    // Actualizar estadísticas y estilos de la cuadrícula
-    // ────────────────────────────────────────────
+    // ── Actualizar UI ──
     function refreshUI() {
       const done = marked.size;
       const left = Math.max(goal - done, 0);
       const pct  = goal > 0 ? Math.min((done / goal) * 100, 100) : 0;
 
-      // Estadísticas
-      statDone.textContent  = done;
-      statLeft.textContent  = left;
-      statStreak.textContent = calcStreak();
-
-      // Barra
+      statDone.textContent    = done;
+      statLeft.textContent    = left;
+      statStreak.textContent  = calcStreak();
       progressFill.style.width = pct.toFixed(1) + '%';
       progressLabel.textContent = pct.toFixed(1) + ' %';
 
-      // Último día marcado
       const lastDay = marked.size > 0 ? Math.max(...marked) : null;
 
-      // Actualizar clases de cada botón
       document.querySelectorAll('.day').forEach(btn => {
-        const d = parseInt(btn.dataset.day, 10);
+        const d      = parseInt(btn.dataset.day, 10);
         const isDone = marked.has(d);
         const isLast = d === lastDay;
-
         btn.classList.toggle('done', isDone && !isLast);
         btn.classList.toggle('last', isLast);
       });
     }
 
-    // ────────────────────────────────────────────
-    // Calcular racha actual (días consecutivos desde el máximo)
-    // ────────────────────────────────────────────
+    // ── Racha ──
     function calcStreak() {
       if (marked.size === 0) return 0;
-
-      // Ordenar días marcados de mayor a menor
       const sorted = [...marked].sort((a, b) => b - a);
       let streak = 1;
-
       for (let i = 0; i < sorted.length - 1; i++) {
-        if (sorted[i] - sorted[i + 1] === 1) {
-          streak++;
-        } else {
-          break;
-        }
+        if (sorted[i] - sorted[i + 1] === 1) streak++;
+        else break;
       }
-
       return streak;
     }
 
-    // ────────────────────────────────────────────
-    // Persistencia
-    // ────────────────────────────────────────────
+    // ── Persistencia ──
     function save() {
-      localStorage.setItem(KEY_MARKED, JSON.stringify([...marked]));
-      localStorage.setItem(KEY_GOAL,   String(goal));
+      const act  = getActive();
+      act.marked = [...marked];
+      act.goal   = goal;
+      saveActivities();
     }
 
-    // ────────────────────────────────────────────
-    // Cambiar meta de días
-    // ────────────────────────────────────────────
+    // ── Cambiar meta ──
     document.getElementById('btnSetGoal').addEventListener('click', () => {
       const val = parseInt(goalInput.value, 10);
       if (!val || val < 1 || val > 3650) {
@@ -532,19 +804,12 @@
         return;
       }
       goal = val;
-
-      // Eliminar días marcados que superen la nueva meta
-      for (const d of [...marked]) {
-        if (d > goal) marked.delete(d);
-      }
-
+      for (const d of [...marked]) if (d > goal) marked.delete(d);
       save();
       buildGrid();
     });
 
-    // ────────────────────────────────────────────
-    // Reiniciar progreso (con confirmación)
-    // ────────────────────────────────────────────
+    // ── Reiniciar progreso ──
     document.getElementById('btnReset').addEventListener('click', () => {
       modalOverlay.classList.add('open');
     });
@@ -560,12 +825,12 @@
       modalOverlay.classList.remove('open');
     });
 
-    // Cerrar modal al hacer clic fuera
     modalOverlay.addEventListener('click', e => {
       if (e.target === modalOverlay) modalOverlay.classList.remove('open');
     });
 
     // ── Arrancar ──
+    buildTabs();
     buildGrid();
   </script>
 </body>
