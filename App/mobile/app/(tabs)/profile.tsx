@@ -117,7 +117,7 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user.email}</Text>
           {user.premium && (
             <View style={styles.premiumBadge}>
-              <Ionicons name="star" size={14} color="#FFD700" />
+              <Ionicons name="star" size={14} color={Colors.info} />
               <Text style={styles.premiumText}>Premium</Text>
             </View>
           )}
@@ -253,13 +253,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FFF9E6',
+    backgroundColor: Colors.infoBg,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
     marginTop: 8,
   },
-  premiumText: { color: '#B8860B', fontWeight: '700', fontSize: 13 },
+  premiumText: { color: Colors.infoText, fontWeight: '700', fontSize: 13 },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'center',

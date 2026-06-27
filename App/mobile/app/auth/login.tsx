@@ -5,16 +5,46 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import { Ionicons } from '@expo/vector-icons';
+// Carga diferida y tolerante: el módulo nativo no existe en Expo Go (solo en dev/production builds).
+let GoogleSignin: typeof import('@react-native-google-signin/google-signin').GoogleSignin | null = null;
+let statusCodes: typeof import('@react-native-google-signin/google-signin').statusCodes | Record<string, never> = {};
+try {
+  const googleSignin = require('@react-native-google-signin/google-signin');
+  GoogleSignin = googleSignin.GoogleSignin;
+  statusCodes = googleSignin.statusCodes;
+} catch {
+  // No disponible en este entorno (ej. Expo Go) — el botón de Google queda deshabilitado.
+}
 
 import { useProductStore } from '@/store/useProductStore';
 import { api } from '@/services/api';
 import { Colors } from '@/constants/colors';
 
-WebBrowser.maybeCompleteAuthSession();
-
 type Screen = 'login' | 'register' | 'forgot' | 'reset';
+
+function PasswordInput({
+  value, onChangeText, placeholder, visible, onToggleVisible,
+}: {
+  value: string; onChangeText: (v: string) => void; placeholder: string;
+  visible: boolean; onToggleVisible: () => void;
+}) {
+  return (
+    <View style={styles.passwordWrapper}>
+      <TextInput
+        style={styles.passwordInput}
+        placeholder={placeholder}
+        placeholderTextColor={Colors.textLight}
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={!visible}
+      />
+      <Pressable style={styles.passwordToggle} onPress={onToggleVisible} hitSlop={8}>
+        <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textLight} />
+      </Pressable>
+    </View>
+  );
+}
 
 export default function LoginScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
@@ -29,30 +59,36 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const { login, register, googleLogin } = useProductStore();
 
-  const [_req, googleResponse, promptAsync] = Google.useAuthRequest({
-    webClientId: '32565345224-9mf40u0j8f9n5dbcc8o5q7vvtqg1ggds.apps.googleusercontent.com',
-    androidClientId: '32565345224-7jh9rlqmqickp8uhc1io2a5bvtf1hn9p.apps.googleusercontent.com',
-    iosClientId: '32565345224-9mf40u0j8f9n5dbcc8o5q7vvtqg1ggds.apps.googleusercontent.com',
-  });
-
   useEffect(() => {
-    if (googleResponse?.type === 'success') {
-      const token = googleResponse.authentication?.accessToken;
-      if (token) handleGoogleLogin(token);
-    }
-  }, [googleResponse]);
+    GoogleSignin?.configure({
+      webClientId: '32565345224-9mf40u0j8f9n5dbcc8o5q7vvtqg1ggds.apps.googleusercontent.com',
+    });
+  }, []);
 
-  const handleGoogleLogin = async (accessToken: string) => {
+  const handleGoogleSignIn = async () => {
+    if (!GoogleSignin) {
+      setError('Inicio de sesión con Google no disponible en este entorno.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      await googleLogin(accessToken);
+      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      await googleLogin(tokens.accessToken);
       router.back();
-    } catch {
-      setError('Error al iniciar sesión con Google. Intenta nuevamente.');
+    } catch (error: any) {
+      if (error.code !== statusCodes.SIGN_IN_CANCELLED) {
+        setError('Error al iniciar sesión con Google. Intenta nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -152,24 +188,22 @@ export default function LoginScreen() {
           )}
 
           {(screen === 'login' || screen === 'register') && (
-            <TextInput
-              style={styles.input}
+            <PasswordInput
               placeholder="Contraseña"
-              placeholderTextColor={Colors.textLight}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              visible={showPassword}
+              onToggleVisible={() => setShowPassword((v) => !v)}
             />
           )}
 
           {screen === 'register' && (
-            <TextInput
-              style={styles.input}
+            <PasswordInput
               placeholder="Confirmar contraseña"
-              placeholderTextColor={Colors.textLight}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              visible={showConfirmPassword}
+              onToggleVisible={() => setShowConfirmPassword((v) => !v)}
             />
           )}
 
@@ -183,21 +217,19 @@ export default function LoginScreen() {
                 onChangeText={setResetToken}
                 keyboardType="number-pad"
               />
-              <TextInput
-                style={styles.input}
+              <PasswordInput
                 placeholder="Nueva contraseña"
-                placeholderTextColor={Colors.textLight}
                 value={newPassword}
                 onChangeText={setNewPassword}
-                secureTextEntry
+                visible={showNewPassword}
+                onToggleVisible={() => setShowNewPassword((v) => !v)}
               />
-              <TextInput
-                style={styles.input}
+              <PasswordInput
                 placeholder="Confirmar nueva contraseña"
-                placeholderTextColor={Colors.textLight}
                 value={confirmNewPassword}
                 onChangeText={setConfirmNewPassword}
-                secureTextEntry
+                visible={showConfirmNewPassword}
+                onToggleVisible={() => setShowConfirmNewPassword((v) => !v)}
               />
             </>
           )}
@@ -228,7 +260,7 @@ export default function LoginScreen() {
               </View>
               <Pressable
                 style={styles.googleButton}
-                onPress={() => promptAsync()}
+                onPress={handleGoogleSignIn}
                 disabled={loading}
               >
                 <Text style={styles.googleButtonText}>Continuar con Google</Text>
@@ -272,6 +304,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: Colors.text,
+  },
+  passwordWrapper: { position: 'relative', justifyContent: 'center' },
+  passwordInput: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingRight: 44,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: Colors.text,
+  },
+  passwordToggle: {
+    position: 'absolute',
+    right: 14,
+    height: '100%',
+    justifyContent: 'center',
   },
   error: { color: Colors.red, fontSize: 14, textAlign: 'center' },
   successText: { color: Colors.green, fontSize: 14, textAlign: 'center' },

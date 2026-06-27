@@ -191,8 +191,10 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   isLoadingFavorites: false,
 
   loadFavorites: async () => {
-    const { user } = get();
-    set({ isLoadingFavorites: true });
+    const { user, favorites } = get();
+    // Solo mostrar el spinner de pantalla completa en la primera carga;
+    // si ya hay favoritos en memoria, refrescar en silencio (sin tapar la lista).
+    if (favorites.length === 0) set({ isLoadingFavorites: true });
     try {
       if (user) {
         const favorites = await api.getFavorites();
@@ -212,24 +214,37 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   addFavorite: async (product) => {
     const { user } = get();
-    if (user) {
-      await api.addFavorite(product.id);
-    } else {
-      await storage.addLocalFavorite(product);
-    }
+    // Optimista: el corazón cambia al toque, no espera la red (evita el "lag"/doble-tap).
     set((state) => ({ favorites: [product, ...state.favorites.filter((f) => f.id !== product.id)] }));
+    try {
+      if (user) {
+        await api.addFavorite(product.id);
+      } else {
+        await storage.addLocalFavorite(product);
+      }
+    } catch (e: any) {
+      // El backend devuelve 400 si ya estaba en favoritos (constraint duplicado) — no es un error real.
+      if (e?.response?.status === 400) return;
+      set((state) => ({ favorites: state.favorites.filter((f) => f.id !== product.id) }));
+      throw e;
+    }
   },
 
   removeFavorite: async (productId) => {
-    const { user } = get();
-    if (user) {
-      await api.removeFavorite(productId);
-    } else {
-      await storage.removeLocalFavorite(productId);
+    const { user, favorites } = get();
+    const removed = favorites.find((f) => f.id === productId);
+    // Optimista: el corazón cambia al toque, no espera la red.
+    set((state) => ({ favorites: state.favorites.filter((f) => f.id !== productId) }));
+    try {
+      if (user) {
+        await api.removeFavorite(productId);
+      } else {
+        await storage.removeLocalFavorite(productId);
+      }
+    } catch (e) {
+      if (removed) set((state) => ({ favorites: [removed, ...state.favorites] }));
+      throw e;
     }
-    set((state) => ({
-      favorites: state.favorites.filter((f) => f.id !== productId),
-    }));
   },
 
   isFavorite: (productId) => {

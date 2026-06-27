@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet, View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { storage } from '@/services/storage';
+import { useProductStore } from '@/store/useProductStore';
 
 function TermsConsentModal({ onAccept }: { onAccept: () => void }) {
   const [showingTerms, setShowingTerms] = useState(false);
@@ -138,8 +140,10 @@ function TermsConsentModal({ onAccept }: { onAccept: () => void }) {
 
 export default function RootLayout() {
   const [showConsent, setShowConsent] = useState(false);
+  const loadUser = useProductStore((s) => s.loadUser);
 
   useEffect(() => {
+    loadUser();
     storage.hasAcceptedTerms().then((accepted) => {
       if (!accepted) setShowConsent(true);
     });
@@ -151,6 +155,7 @@ export default function RootLayout() {
   };
 
   return (
+    <SafeAreaProvider>
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="dark" />
       {showConsent && <TermsConsentModal onAccept={handleAccept} />}
@@ -198,6 +203,7 @@ export default function RootLayout() {
         />
       </Stack>
     </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

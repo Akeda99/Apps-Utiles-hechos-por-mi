@@ -2,7 +2,7 @@
   "expo": {
     "name": "AlimentaPerú",
     "slug": "nutriscan-peru",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1DB954"
+      "backgroundColor": "#4A6B3D"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -30,20 +30,8 @@
       "package": "com.nutriscanperu.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#1DB954"
+        "backgroundColor": "#4A6B3D"
       },
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "com.googleusercontent.apps.32565345224-7jh9rlqmqickp8uhc1io2a5bvtf1hn9p"
-            }
-          ],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
-      ]
     },
     "plugins": [
       "expo-router",
@@ -51,6 +39,12 @@
         "expo-camera",
         {
           "cameraPermission": "Necesitamos acceso a la cámara para escanear códigos de barras."
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.32565345224-9mf40u0j8f9n5dbcc8o5q7vvtqg1ggds"
         }
       ]
     ],

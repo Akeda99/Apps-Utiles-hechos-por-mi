@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head><title>Convertir assets a PNG</title></head>
+<body style="background:#222; color:white; font-family:Arial; padding:20px;">
+  <h2>Convertidor de assets - AlimentaPerú</h2>
+
+  <h3>Ícono (512x512)</h3>
+  <canvas id="iconCanvas" width="512" height="512" style="border:1px solid #555;"></canvas>
+  <br><button onclick="descargar('iconCanvas','icon-512.png')" style="margin:10px 0; padding:8px 16px; background:#1DB954; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">Descargar icon-512.png</button>
+
+  <h3>Feature Graphic (1024x500)</h3>
+  <canvas id="fgCanvas" width="1024" height="500" style="border:1px solid #555; max-width:100%;"></canvas>
+  <br><button onclick="descargar('fgCanvas','feature-graphic.png')" style="margin:10px 0; padding:8px 16px; background:#1DB954; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">Descargar feature-graphic.png</button>
+
+  <script>
+    function renderSVG(svgPath, canvasId, w, h) {
+      const img = new Image();
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', svgPath, true);
+      xhr.onload = function() {
+        const svg = xhr.responseText;
+        const blob = new Blob([svg], {type: 'image/svg+xml'});
+        const url = URL.createObjectURL(blob);
+        img.onload = function() {
+          const canvas = document.getElementById(canvasId);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      };
+      xhr.send();
+    }
+
+    function descargar(canvasId, filename) {
+      const canvas = document.getElementById(canvasId);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    renderSVG('icon.svg', 'iconCanvas', 512, 512);
+    renderSVG('feature-graphic.svg', 'fgCanvas', 1024, 500);
+  </script>
+</body>
+</html>

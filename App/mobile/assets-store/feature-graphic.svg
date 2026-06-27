@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <!-- Fondo degradado -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#158a3e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1DB954;stop-opacity:1" />
+    </linearGradient>
+    <!-- Círculos decorativos -->
+    <radialGradient id="circle" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:white;stop-opacity:0.08" />
+      <stop offset="100%" style="stop-color:white;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+
+  <!-- Círculos decorativos de fondo -->
+  <circle cx="820" cy="80" r="220" fill="url(#circle)"/>
+  <circle cx="900" cy="420" r="180" fill="url(#circle)"/>
+  <circle cx="100" cy="400" r="150" fill="url(#circle)"/>
+
+  <!-- Ícono hoja (lado izquierdo) -->
+  <g transform="translate(160, 250)">
+    <!-- Hoja -->
+    <path d="M0,-100 C50,-100 95,-50 95,10 C95,65 50,95 0,105 C-50,95 -95,65 -95,10 C-95,-50 -50,-100 0,-100 Z"
+          fill="white" opacity="0.2"/>
+    <path d="M0,-72 C36,-72 70,-36 70,8 C70,50 36,72 0,80 C-36,72 -70,50 -70,8 C-70,-36 -36,-72 0,-72 Z"
+          fill="white"/>
+    <line x1="0" y1="-54" x2="0" y2="68" stroke="#1DB954" stroke-width="5" stroke-linecap="round"/>
+    <line x1="0" y1="-18" x2="-32" y2="9" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="-18" x2="32" y2="9" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="14" x2="-27" y2="36" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="14" x2="27" y2="36" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <!-- Líneas de escaneo debajo del ícono -->
+    <g transform="translate(0, 130)" opacity="0.7">
+      <rect x="-55" y="-14" width="6" height="28" rx="2" fill="white"/>
+      <rect x="-43" y="-14" width="4" height="28" rx="2" fill="white"/>
+      <rect x="-33" y="-14" width="8" height="28" rx="2" fill="white"/>
+      <rect x="-19" y="-14" width="4" height="28" rx="2" fill="white"/>
+      <rect x="-10" y="-14" width="6" height="28" rx="2" fill="white"/>
+      <rect x="2" y="-14" width="4" height="28" rx="2" fill="white"/>
+      <rect x="11" y="-14" width="8" height="28" rx="2" fill="white"/>
+      <rect x="25" y="-14" width="4" height="28" rx="2" fill="white"/>
+      <rect x="34" y="-14" width="6" height="28" rx="2" fill="white"/>
+      <rect x="46" y="-14" width="4" height="28" rx="2" fill="white"/>
+    </g>
+  </g>
+
+  <!-- Texto principal -->
+  <text x="320" y="220" font-family="Arial, sans-serif" font-size="86" font-weight="900"
+        fill="white" letter-spacing="-2">AlimentaPerú</text>
+
+  <!-- Subtítulo -->
+  <text x="322" y="285" font-family="Arial, sans-serif" font-size="32" font-weight="400"
+        fill="white" opacity="0.9">Escanea · Analiza · Come mejor</text>
+
+  <!-- Chips de características -->
+  <g transform="translate(322, 330)">
+    <!-- Chip 1 -->
+    <rect x="0" y="0" width="175" height="44" rx="22" fill="white" opacity="0.2"/>
+    <text x="88" y="27" font-family="Arial, sans-serif" font-size="18" fill="white"
+          text-anchor="middle" dominant-baseline="middle">🌿 Score nutricional</text>
+    <!-- Chip 2 -->
+    <rect x="190" y="0" width="165" height="44" rx="22" fill="white" opacity="0.2"/>
+    <text x="272" y="27" font-family="Arial, sans-serif" font-size="18" fill="white"
+          text-anchor="middle" dominant-baseline="middle">📊 Aditivos</text>
+    <!-- Chip 3 -->
+    <rect x="370" y="0" width="195" height="44" rx="22" fill="white" opacity="0.2"/>
+    <text x="467" y="27" font-family="Arial, sans-serif" font-size="18" fill="white"
+          text-anchor="middle" dominant-baseline="middle">🇵🇪 Hecho en Perú</text>
+  </g>
+</svg>

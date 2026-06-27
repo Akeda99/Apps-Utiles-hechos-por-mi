@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HealthScoreWheel } from '@/components/HealthScoreWheel';
 import { NutrientTrafficLight } from '@/components/NutrientTrafficLight';
 import { WarningBadge } from '@/components/WarningBadge';
+import { WarningOctagon, OFFICIAL_OCTAGON_WARNINGS } from '@/components/WarningOctagon';
 import { AlternativeCard } from '@/components/AlternativeCard';
 import { useProductStore } from '@/store/useProductStore';
 import { Colors, ScoreColors } from '@/constants/colors';
@@ -20,9 +21,9 @@ import type { ScoreLabel } from '@/constants/colors';
 import type { Product, AdditiveDetail, DataQuality, HealthCheckResult } from '@/services/api';
 
 const RISK_COLORS = {
-  green:  { bg: '#D4EDDA', border: '#C3E6CB', text: '#155724', dot: '#28a745' },
-  yellow: { bg: '#FFF3CD', border: '#FFEAA7', text: '#856404', dot: '#f0ad4e' },
-  red:    { bg: '#F8D7DA', border: '#F5C6CB', text: '#721C24', dot: '#dc3545' },
+  green:  { bg: Colors.scoreGreenBg, border: Colors.scoreGreenBorder, text: Colors.scoreGreenText, dot: Colors.scoreGreen },
+  yellow: { bg: Colors.scoreYellowBg, border: Colors.scoreYellowBorder, text: Colors.scoreYellowText, dot: Colors.scoreYellow },
+  red:    { bg: Colors.scoreRedBg, border: Colors.scoreRedBorder, text: Colors.scoreRedText, dot: Colors.scoreRed },
 };
 
 const RISK_LABELS = { green: 'Seguro', yellow: 'Precaución', red: 'Riesgo' };
@@ -161,7 +162,15 @@ export default function ProductDetailScreen() {
   const [suggestSugars, setSuggestSugars] = useState('');
   const [suggestFiber, setSuggestFiber] = useState('');
   const [suggestSodium, setSuggestSodium] = useState('');
+  const [suggestBasisAmount, setSuggestBasisAmount] = useState<number>(100);
+  const [suggestBasisUnit, setSuggestBasisUnit] = useState<'g' | 'ml'>('g');
+  const [suggestCustomBasis, setSuggestCustomBasis] = useState(false);
+  const [suggestCustomBasisInput, setSuggestCustomBasisInput] = useState('');
   const [showNutrition, setShowNutrition] = useState(false);
+  const [portionAmount, setPortionAmount] = useState(100);
+  const [portionUnit, setPortionUnit] = useState<'g' | 'ml'>('g');
+  const [customPortion, setCustomPortion] = useState(false);
+  const [customPortionInput, setCustomPortionInput] = useState('');
   const [showIngredients, setShowIngredients] = useState(false);
   const [localSuggestion, setLocalSuggestion] = useState<import('@/services/storage').LocalSuggestion | null>(null);
   const [healthCheck, setHealthCheck] = useState<HealthCheckResult | null>(null);
@@ -174,6 +183,23 @@ export default function ProductDetailScreen() {
     if (!barcode) return;
     (async () => {
       let scanResult: { product: Product; alternatives: Product[]; additive_details: AdditiveDetail[]; data_quality: DataQuality | null } | null = null;
+      let usedCache = false;
+
+      // Si venimos de Historial/Favoritos, ya tenemos el producto completo guardado localmente:
+      // lo mostramos al toque sin esperar red, y el scan de abajo solo refresca en segundo plano.
+      if (viewOnly) {
+        const [localHistory, localFavorites] = await Promise.all([
+          storage.getLocalHistory(),
+          storage.getLocalFavorites(),
+        ]);
+        const cached = localHistory.find((h) => h.barcode === barcode) ?? localFavorites.find((f) => f.barcode === barcode);
+        if (cached) {
+          setProduct(cached);
+          setLoading(false);
+          usedCache = true;
+        }
+      }
+
       try {
         scanResult = await scanProduct(barcode, viewOnly);
         setProduct(scanResult.product);
@@ -181,7 +207,9 @@ export default function ProductDetailScreen() {
         setAdditiveDetails(scanResult.additive_details || []);
         setDataQuality(scanResult.data_quality || null);
       } catch (e: any) {
-        if (e?.code === 'SCAN_LIMIT') {
+        if (usedCache) {
+          // Ya mostramos el producto cacheado; un error al refrescar en segundo plano no debe romper la vista.
+        } else if (e?.code === 'SCAN_LIMIT') {
           setScanLimitHit(true);
         } else {
           const detail = e?.response?.data?.detail;
@@ -305,11 +333,19 @@ export default function ProductDetailScreen() {
     setSuggestSugars(String(product?.sugars ?? ''));
     setSuggestFiber(String(product?.fiber ?? ''));
     setSuggestSodium(String(product?.sodium_mg ?? ''));
+    setSuggestBasisAmount(100);
+    setSuggestBasisUnit('g');
+    setSuggestCustomBasis(false);
+    setSuggestCustomBasisInput('');
     setSuggestModalVisible(true);
   };
 
   const handleSuggest = async () => {
     if (!product || !barcode) return;
+    if (suggestBasisAmount <= 0) {
+      Alert.alert('Error', 'La cantidad de referencia debe ser mayor a 0');
+      return;
+    }
     const changes: Record<string, string> = {};
     if (suggestIngredients.trim() && suggestIngredients.trim() !== (product.ingredients_text ?? ''))
       changes.ingredients_text = suggestIngredients.trim();
@@ -328,8 +364,13 @@ export default function ProductDetailScreen() {
       ['fiber', suggestFiber, product.fiber],
       ['sodium_mg', suggestSodium, product.sodium_mg],
     ];
+    // Los valores guardados siempre son por 100g/ml — si el usuario eligió otra cantidad de
+    // referencia (ej. la porción de la etiqueta), se normaliza antes de comparar y enviar.
+    const suggestScale = 100 / suggestBasisAmount;
     for (const [key, val, orig] of nutrientMap) {
-      if (val.trim() !== '' && val.trim() !== String(orig ?? '')) changes[key] = val.trim();
+      if (val.trim() === '') continue;
+      const scaledVal = String(Math.round(parseFloat(val) * suggestScale * 100) / 100);
+      if (scaledVal !== String(orig ?? '')) changes[key] = scaledVal;
     }
     const origAdditives = [...(product.additives ?? [])].sort().join(',');
     const newAdditives = [...suggestAdditivesList].sort().join(',');
@@ -394,7 +435,7 @@ export default function ProductDetailScreen() {
   if (scanLimitHit) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Ionicons name="lock-closed" size={64} color="#F59E0B" />
+        <Ionicons name="lock-closed" size={64} color={Colors.info} />
         <Text style={styles.notFoundTitle}>Límite diario alcanzado</Text>
         <Text style={styles.notFoundText}>
           Has usado tus 10 escaneos gratuitos de hoy. Hazte Premium para escaneos ilimitados.
@@ -451,7 +492,10 @@ export default function ProductDetailScreen() {
           </View>
           <Pressable
             style={styles.favoriteButton}
-            onPress={() => isFav ? removeFavorite(product.id) : addFavorite(product)}
+            onPress={() => {
+              const action = isFav ? removeFavorite(product.id) : addFavorite(product);
+              action.catch(() => Alert.alert('Error', 'No pudimos actualizar tus favoritos. Inténtalo de nuevo.'));
+            }}
           >
             <Ionicons
               name={isFav ? 'heart' : 'heart-outline'}
@@ -469,12 +513,21 @@ export default function ProductDetailScreen() {
         {/* Aviso de datos sospechosos */}
         {dataQuality?.is_suspicious && (
           <View style={styles.qualityWarningBox}>
-            <Ionicons name="warning-outline" size={20} color="#856404" />
+            <Ionicons name="warning-outline" size={20} color={Colors.scoreYellowText} />
             <View style={{ flex: 1 }}>
               <Text style={styles.qualityWarningTitle}>Datos posiblemente incorrectos</Text>
               {dataQuality.issues.map((issue, i) => (
                 <Text key={i} style={styles.qualityWarningItem}>• {issue}</Text>
               ))}
+              <Text style={styles.qualityWarningCta}>
+                ¿Conoces los datos reales? Corrígelos para ver si este producto es verdaderamente saludable o no.
+              </Text>
+              <Pressable
+                style={styles.qualityWarningButton}
+                onPress={() => setSuggestModalVisible(true)}
+              >
+                <Text style={styles.qualityWarningButtonText}>Corregir datos del producto</Text>
+              </Pressable>
             </View>
           </View>
         )}
@@ -484,9 +537,11 @@ export default function ProductDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Advertencias Ley 30021</Text>
             <View style={styles.warningsRow}>
-              {product.warnings.map((w) => (
-                <WarningBadge key={w} warning={w} />
-              ))}
+              {product.warnings.map((w) =>
+                OFFICIAL_OCTAGON_WARNINGS.includes(w)
+                  ? <WarningOctagon key={w} warning={w} />
+                  : <WarningBadge key={w} warning={w} />
+              )}
             </View>
           </View>
         )}
@@ -510,17 +565,66 @@ export default function ProductDetailScreen() {
           </Pressable>
 
           {showNutrition && (
-            <View style={styles.nutritionTable}>
-              <NutritionRow label="Energía" value={`${product.energy_kcal?.toFixed(0) ?? 0} kcal`} />
-              <NutritionRow label="Grasas totales" value={`${product.fat_total?.toFixed(1) ?? 0} g`} />
-              <NutritionRow label="Grasas saturadas" value={`${product.fat_saturated?.toFixed(1) ?? 0} g`} indent />
-              <NutritionRow label="Grasas trans" value={`${product.fat_trans?.toFixed(1) ?? 0} g`} indent />
-              <NutritionRow label="Carbohidratos" value={`${product.carbohydrates?.toFixed(1) ?? 0} g`} />
-              <NutritionRow label="Azúcares" value={`${product.sugars?.toFixed(1) ?? 0} g`} indent />
-              <NutritionRow label="Fibra" value={`${product.fiber?.toFixed(1) ?? 0} g`} />
-              <NutritionRow label="Proteínas" value={`${product.protein?.toFixed(1) ?? 0} g`} />
-              <NutritionRow label="Sodio" value={`${product.sodium_mg?.toFixed(0) ?? 0} mg`} />
-            </View>
+            <>
+              {/* Calculadora de porción: recalcula la tabla de abajo, no afecta el semáforo (siempre por 100g/ml) */}
+              <Text style={[styles.suggestLabel, { marginTop: 12, fontSize: 14, color: Colors.text }]}>Calcular para una cantidad específica</Text>
+              <View style={styles.basisRow}>
+                {[100, 200].map((preset) => (
+                  <Pressable
+                    key={preset}
+                    style={[styles.basisChip, !customPortion && portionAmount === preset && styles.basisChipActive]}
+                    onPress={() => { setCustomPortion(false); setPortionAmount(preset); }}
+                  >
+                    <Text style={[styles.basisChipText, !customPortion && portionAmount === preset && styles.basisChipTextActive]}>
+                      {preset}{portionUnit}
+                    </Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  style={[styles.basisChip, customPortion && styles.basisChipActive]}
+                  onPress={() => setCustomPortion(true)}
+                >
+                  <Text style={[styles.basisChipText, customPortion && styles.basisChipTextActive]}>Personalizado</Text>
+                </Pressable>
+                <Pressable style={styles.unitToggle} onPress={() => setPortionUnit((u) => (u === 'g' ? 'ml' : 'g'))}>
+                  <Text style={styles.unitToggleText}>{portionUnit}</Text>
+                </Pressable>
+              </View>
+              {customPortion && (
+                <TextInput
+                  style={[styles.suggestInput, { marginTop: 8, marginBottom: 8 }]}
+                  placeholder={`Cantidad en ${portionUnit} (ej: 30)`}
+                  placeholderTextColor={Colors.textLight}
+                  value={customPortionInput}
+                  onChangeText={(v) => {
+                    setCustomPortionInput(v);
+                    const n = parseFloat(v);
+                    setPortionAmount(Number.isFinite(n) && n > 0 ? n : 0);
+                  }}
+                  keyboardType="decimal-pad"
+                />
+              )}
+              <Text style={styles.fieldHint}>Valores para {portionAmount || '?'}{portionUnit}</Text>
+
+              <View style={styles.nutritionTable}>
+                {(() => {
+                  const m = portionAmount > 0 ? portionAmount / 100 : 0;
+                  return (
+                    <>
+                      <NutritionRow label="Energía" value={`${((product.energy_kcal ?? 0) * m).toFixed(0)} kcal`} />
+                      <NutritionRow label="Grasas totales" value={`${((product.fat_total ?? 0) * m).toFixed(1)} g`} />
+                      <NutritionRow label="Grasas saturadas" value={`${((product.fat_saturated ?? 0) * m).toFixed(1)} g`} indent />
+                      <NutritionRow label="Grasas trans" value={`${((product.fat_trans ?? 0) * m).toFixed(1)} g`} indent />
+                      <NutritionRow label="Carbohidratos" value={`${((product.carbohydrates ?? 0) * m).toFixed(1)} g`} />
+                      <NutritionRow label="Azúcares" value={`${((product.sugars ?? 0) * m).toFixed(1)} g`} indent />
+                      <NutritionRow label="Fibra" value={`${((product.fiber ?? 0) * m).toFixed(1)} g`} />
+                      <NutritionRow label="Proteínas" value={`${((product.protein ?? 0) * m).toFixed(1)} g`} />
+                      <NutritionRow label="Sodio" value={`${((product.sodium_mg ?? 0) * m).toFixed(0)} mg`} />
+                    </>
+                  );
+                })()}
+              </View>
+            </>
           )}
         </View>
 
@@ -583,10 +687,10 @@ export default function ProductDetailScreen() {
             <Text style={styles.sectionTitle}>Alertas de salud personalizadas</Text>
             {healthCheck.alerts.map((alert, i) => (
               <View key={i} style={[styles.healthAlert, alert.severity === 'high' ? styles.healthAlertHigh : styles.healthAlertMedium]}>
-                <Ionicons name={alert.severity === 'high' ? 'warning' : 'alert-circle'} size={16} color={alert.severity === 'high' ? '#721C24' : '#856404'} />
+                <Ionicons name={alert.severity === 'high' ? 'warning' : 'alert-circle'} size={16} color={alert.severity === 'high' ? Colors.scoreRedText : Colors.scoreYellowText} />
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={[styles.healthAlertLabel, { color: alert.severity === 'high' ? '#721C24' : '#856404' }]}>{alert.label}</Text>
-                  <Text style={[styles.healthAlertMsg, { color: alert.severity === 'high' ? '#721C24' : '#856404' }]}>{alert.message}</Text>
+                  <Text style={[styles.healthAlertLabel, { color: alert.severity === 'high' ? Colors.scoreRedText : Colors.scoreYellowText }]}>{alert.label}</Text>
+                  <Text style={[styles.healthAlertMsg, { color: alert.severity === 'high' ? Colors.scoreRedText : Colors.scoreYellowText }]}>{alert.message}</Text>
                 </View>
               </View>
             ))}
@@ -597,7 +701,7 @@ export default function ProductDetailScreen() {
         {localSuggestion && (
           <View style={styles.suggestionBanner}>
             <View style={styles.suggestionBannerHeader}>
-              <Ionicons name="checkmark-circle" size={16} color="#155724" />
+              <Ionicons name="checkmark-circle" size={16} color={Colors.scoreGreenText} />
               <Text style={styles.suggestionBannerTitle}>Corrección enviada · pendiente de revisión</Text>
             </View>
             <Text style={styles.suggestionBannerDate}>
@@ -630,7 +734,7 @@ export default function ProductDetailScreen() {
         {product.source === 'user' && !product.verified && confirmStatus && (
           <View style={styles.verifyBanner}>
             <View style={styles.verifyBannerHeader}>
-              <Ionicons name="people-outline" size={18} color="#1D4ED8" />
+              <Ionicons name="people-outline" size={18} color={Colors.infoText} />
               <Text style={styles.verifyBannerTitle}>Producto agregado por la comunidad</Text>
             </View>
             <Text style={styles.verifyBannerText}>
@@ -647,7 +751,7 @@ export default function ProductDetailScreen() {
                   onPress={() => handleConfirm('confirm')}
                   disabled={confirmLoading}
                 >
-                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Ionicons name="checkmark" size={16} color={Colors.white} />
                   <Text style={styles.verifyBtnText}>Correcto</Text>
                 </Pressable>
                 <Pressable
@@ -655,7 +759,7 @@ export default function ProductDetailScreen() {
                   onPress={() => handleConfirm('reject')}
                   disabled={confirmLoading}
                 >
-                  <Ionicons name="close" size={16} color="#fff" />
+                  <Ionicons name="close" size={16} color={Colors.white} />
                   <Text style={styles.verifyBtnText}>Incorrecto</Text>
                 </Pressable>
               </View>
@@ -669,7 +773,7 @@ export default function ProductDetailScreen() {
         {/* Banner premium para usuarios free */}
         {!user?.premium && (
           <View style={styles.premiumBanner}>
-            <Ionicons name="star" size={20} color="#F59E0B" />
+            <Ionicons name="star" size={20} color={Colors.info} />
             <View style={{ flex: 1 }}>
               <Text style={styles.premiumBannerTitle}>Hazte Premium</Text>
               <Text style={styles.premiumBannerText}>Accede a alertas de salud personalizadas según tu perfil médico.</Text>
@@ -738,8 +842,48 @@ export default function ProductDetailScreen() {
 
               {/* Nutrición */}
               <Text style={[styles.suggestLabel, { marginTop: 16, fontSize: 14, color: Colors.text }]}>
-                Información nutricional (por 100g/ml)
+                Información nutricional
               </Text>
+              <Text style={styles.fieldHint}>Ingresa los valores tal como aparecen en la etiqueta, para esta cantidad</Text>
+              <View style={styles.basisRow}>
+                {[100, 200].map((preset) => (
+                  <Pressable
+                    key={preset}
+                    style={[styles.basisChip, !suggestCustomBasis && suggestBasisAmount === preset && styles.basisChipActive]}
+                    onPress={() => { setSuggestCustomBasis(false); setSuggestBasisAmount(preset); }}
+                  >
+                    <Text style={[styles.basisChipText, !suggestCustomBasis && suggestBasisAmount === preset && styles.basisChipTextActive]}>
+                      {preset}{suggestBasisUnit}
+                    </Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  style={[styles.basisChip, suggestCustomBasis && styles.basisChipActive]}
+                  onPress={() => setSuggestCustomBasis(true)}
+                >
+                  <Text style={[styles.basisChipText, suggestCustomBasis && styles.basisChipTextActive]}>Personalizado</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.unitToggle}
+                  onPress={() => setSuggestBasisUnit((u) => (u === 'g' ? 'ml' : 'g'))}
+                >
+                  <Text style={styles.unitToggleText}>{suggestBasisUnit}</Text>
+                </Pressable>
+              </View>
+              {suggestCustomBasis && (
+                <TextInput
+                  style={[styles.suggestInput, { marginTop: 8 }]}
+                  placeholder={`Cantidad en ${suggestBasisUnit} (ej: 30)`}
+                  placeholderTextColor={Colors.textLight}
+                  value={suggestCustomBasisInput}
+                  onChangeText={(v) => {
+                    setSuggestCustomBasisInput(v);
+                    const n = parseFloat(v);
+                    setSuggestBasisAmount(Number.isFinite(n) && n > 0 ? n : 0);
+                  }}
+                  keyboardType="decimal-pad"
+                />
+              )}
               <View style={styles.nutriGrid}>
                 {([
                   ['Calorías (kcal)', suggestEnergy, setSuggestEnergy],
@@ -811,7 +955,7 @@ export default function ProductDetailScreen() {
                       }}
                     >
                       <View style={[styles.riskDotSmall, {
-                        backgroundColor: item.risk_level === 'red' ? '#dc3545' : item.risk_level === 'yellow' ? '#f0ad4e' : '#28a745'
+                        backgroundColor: item.risk_level === 'red' ? Colors.scoreRed : item.risk_level === 'yellow' ? Colors.scoreYellow : Colors.scoreGreen
                       }]} />
                       <Text style={styles.additiveDropdownCode}>{item.e_number}</Text>
                       <Text style={styles.additiveDropdownName} numberOfLines={1}>{item.name}</Text>
@@ -1041,20 +1185,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     alignItems: 'flex-start',
-    backgroundColor: '#FFF3CD',
+    backgroundColor: Colors.scoreYellowBg,
     borderWidth: 1,
-    borderColor: '#FFEAA7',
+    borderColor: Colors.scoreYellowBorder,
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 14,
   },
-  qualityWarningTitle: { fontSize: 14, fontWeight: '700', color: '#856404', marginBottom: 4 },
-  qualityWarningItem: { fontSize: 13, color: '#856404', lineHeight: 20 },
+  qualityWarningTitle: { fontSize: 14, fontWeight: '700', color: Colors.scoreYellowText, marginBottom: 4 },
+  qualityWarningItem: { fontSize: 13, color: Colors.scoreYellowText, lineHeight: 20 },
+  qualityWarningCta: { fontSize: 13, color: Colors.scoreYellowText, lineHeight: 20, marginTop: 8, fontStyle: 'italic' },
+  qualityWarningButton: {
+    marginTop: 10,
+    backgroundColor: Colors.scoreYellowText,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+  },
+  qualityWarningButtonText: { color: Colors.white, fontSize: 13, fontWeight: '700' },
   section: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
   sectionSubtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: 12 },
-  warningsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  warningsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   // Toggle button
   toggleButton: {
     flexDirection: 'row',
@@ -1123,7 +1277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  riskBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  riskBadgeText: { color: Colors.white, fontSize: 11, fontWeight: '700' },
   additiveExpanded: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.08)',
@@ -1210,6 +1364,28 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
   suggestLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4, marginTop: 8 },
+  fieldHint: { fontSize: 12, color: Colors.textLight, marginBottom: 8 },
+  basisRow: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 },
+  basisChip: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  basisChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  basisChipText: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  basisChipTextActive: { color: Colors.white },
+  unitToggle: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  unitToggleText: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary },
   suggestInput: {
     backgroundColor: Colors.background,
     borderWidth: 1,
@@ -1232,17 +1408,17 @@ const styles = StyleSheet.create({
   suggestionBanner: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#D4EDDA',
+    backgroundColor: Colors.scoreGreenBg,
     borderWidth: 1,
-    borderColor: '#C3E6CB',
+    borderColor: Colors.scoreGreenBorder,
     borderRadius: 12,
     padding: 14,
     gap: 4,
   },
   suggestionBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  suggestionBannerTitle: { fontSize: 13, fontWeight: '700', color: '#155724', flex: 1 },
-  suggestionBannerDate: { fontSize: 12, color: '#155724', opacity: 0.7, marginBottom: 4 },
-  suggestionBannerChange: { fontSize: 13, color: '#155724', lineHeight: 20 },
+  suggestionBannerTitle: { fontSize: 13, fontWeight: '700', color: Colors.scoreGreenText, flex: 1 },
+  suggestionBannerDate: { fontSize: 12, color: Colors.scoreGreenText, opacity: 0.7, marginBottom: 4 },
+  suggestionBannerChange: { fontSize: 13, color: Colors.scoreGreenText, lineHeight: 20 },
   nutriGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
   nutriCell: { width: '47%' },
   nutriCellLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 4 },
@@ -1282,8 +1458,8 @@ const styles = StyleSheet.create({
   additiveDropdownName: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
   // Premium
   healthAlert: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: 'flex-start' },
-  healthAlertHigh: { backgroundColor: '#F8D7DA', borderColor: '#F5C6CB' },
-  healthAlertMedium: { backgroundColor: '#FFF3CD', borderColor: '#FFEAA7' },
+  healthAlertHigh: { backgroundColor: Colors.scoreRedBg, borderColor: Colors.scoreRedBorder },
+  healthAlertMedium: { backgroundColor: Colors.scoreYellowBg, borderColor: Colors.scoreYellowBorder },
   healthAlertLabel: { fontSize: 13, fontWeight: '700' },
   healthAlertMsg: { fontSize: 12, lineHeight: 18 },
   premiumBanner: {
@@ -1292,33 +1468,33 @@ const styles = StyleSheet.create({
     gap: 12,
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: Colors.infoBg,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: Colors.infoBorder,
     borderRadius: 12,
     padding: 14,
   },
-  premiumBannerTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
-  premiumBannerText: { fontSize: 12, color: '#92400E', lineHeight: 18, marginTop: 2 },
+  premiumBannerTitle: { fontSize: 14, fontWeight: '700', color: Colors.infoText },
+  premiumBannerText: { fontSize: 12, color: Colors.infoText, lineHeight: 18, marginTop: 2 },
   verifyBanner: {
     marginHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: Colors.infoBg,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: Colors.infoBorder,
     borderRadius: 12,
     padding: 14,
     gap: 8,
   },
   verifyBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  verifyBannerTitle: { fontSize: 14, fontWeight: '700', color: '#1D4ED8' },
-  verifyBannerText: { fontSize: 13, color: '#1E40AF', lineHeight: 18 },
+  verifyBannerTitle: { fontSize: 14, fontWeight: '700', color: Colors.infoText },
+  verifyBannerText: { fontSize: 13, color: Colors.infoText, lineHeight: 18 },
   verifyButtons: { flexDirection: 'row', gap: 8, marginTop: 4 },
   verifyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8 },
-  verifyBtnConfirm: { backgroundColor: '#16A34A' },
-  verifyBtnReject: { backgroundColor: '#DC2626' },
-  verifyBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  verifyLoginText: { fontSize: 12, color: '#1D4ED8', fontStyle: 'italic' },
+  verifyBtnConfirm: { backgroundColor: Colors.scoreGreen },
+  verifyBtnReject: { backgroundColor: Colors.scoreRed },
+  verifyBtnText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
+  verifyLoginText: { fontSize: 12, color: Colors.infoText, fontStyle: 'italic' },
   compareButton: {
     flexDirection: 'row',
     alignItems: 'center',

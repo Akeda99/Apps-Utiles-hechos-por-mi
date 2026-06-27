@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Colors } from '@/constants/colors';
 
 type Props = {
   feature?: string;
@@ -28,21 +29,21 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: Colors.infoBg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: Colors.infoBorder,
     gap: 8,
   },
   icon: { fontSize: 32 },
-  title: { fontSize: 18, fontWeight: '700', color: '#92400E' },
-  description: { fontSize: 14, color: '#78350F', textAlign: 'center', lineHeight: 20 },
+  title: { fontSize: 18, fontWeight: '700', color: Colors.infoText },
+  description: { fontSize: 14, color: Colors.infoText, textAlign: 'center', lineHeight: 20 },
   button: {
     marginTop: 8,
-    backgroundColor: '#F59E0B',
+    backgroundColor: Colors.info,
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 20,
   },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  buttonText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
 });

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Fondo verde -->
+  <rect width="512" height="512" rx="100" fill="#1DB954"/>
+
+  <!-- Hoja central (símbolo de alimentación saludable) -->
+  <g transform="translate(256, 230)">
+    <!-- Hoja principal -->
+    <path d="M0,-110 C60,-110 110,-60 110,0 C110,70 60,110 0,120 C-60,110 -110,70 -110,0 C-110,-60 -60,-110 0,-110 Z"
+          fill="white" opacity="0.15"/>
+    <!-- Hoja sólida más pequeña -->
+    <path d="M0,-80 C40,-80 80,-40 80,10 C80,55 40,80 0,88 C-40,80 -80,55 -80,10 C-80,-40 -40,-80 0,-80 Z"
+          fill="white"/>
+    <!-- Vena central de la hoja -->
+    <line x1="0" y1="-60" x2="0" y2="75" stroke="#1DB954" stroke-width="5" stroke-linecap="round"/>
+    <!-- Venas laterales -->
+    <line x1="0" y1="-20" x2="-35" y2="10" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="-20" x2="35" y2="10" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="15" x2="-30" y2="40" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="15" x2="30" y2="40" stroke="#1DB954" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Líneas de escaneo (barcode) en la parte inferior -->
+  <g transform="translate(256, 390)" opacity="0.9">
+    <rect x="-70" y="-18" width="8" height="36" rx="2" fill="white"/>
+    <rect x="-56" y="-18" width="5" height="36" rx="2" fill="white"/>
+    <rect x="-45" y="-18" width="10" height="36" rx="2" fill="white"/>
+    <rect x="-28" y="-18" width="5" height="36" rx="2" fill="white"/>
+    <rect x="-18" y="-18" width="8" height="36" rx="2" fill="white"/>
+    <rect x="-4" y="-18" width="5" height="36" rx="2" fill="white"/>
+    <rect x="6" y="-18" width="10" height="36" rx="2" fill="white"/>
+    <rect x="23" y="-18" width="5" height="36" rx="2" fill="white"/>
+    <rect x="34" y="-18" width="8" height="36" rx="2" fill="white"/>
+    <rect x="48" y="-18" width="5" height="36" rx="2" fill="white"/>
+    <rect x="59" y="-18" width="8" height="36" rx="2" fill="white"/>
+  </g>
+</svg>

@@ -1,21 +1,39 @@
 export const Colors = {
-  primary: '#1DB954',      // Verde principal
-  primaryDark: '#158a3e',
-  yellow: '#F5A623',
-  red: '#E74C3C',
-  green: '#27AE60',
+  primary: '#4A6B3D',      // Verde oliva/bosque (marca)
+  primaryDark: '#374F2D',
+  primaryLight: '#E7EDE1',
 
-  background: '#F8F9FA',
+  info: '#0B6FA8',         // Acento informativo (premium/comunidad) — separado de marca y salud
+  infoBg: '#E5F1F8',
+  infoBorder: '#BBDCEE',
+  infoText: '#074F78',
+
+  yellow: '#C97A0A',
+  red: '#C7423D',
+  green: '#1E8E5A',
+
+  background: '#F6F8F9',
   surface: '#FFFFFF',
-  border: '#E9ECEF',
+  border: '#D7DEE3',
 
-  text: '#1A1A2E',
-  textSecondary: '#6C757D',
-  textLight: '#ADB5BD',
+  text: '#16212B',
+  textSecondary: '#51626F',
+  textLight: '#8B98A3',
 
-  scoreGreen: '#27AE60',
-  scoreYellow: '#F39C12',
-  scoreRed: '#E74C3C',
+  scoreGreen: '#1E8E5A',
+  scoreGreenBg: '#E3F5EB',
+  scoreGreenBorder: '#BEE6CD',
+  scoreGreenText: '#155724',
+
+  scoreYellow: '#C97A0A',
+  scoreYellowBg: '#FDF1DD',
+  scoreYellowBorder: '#F6DDAA',
+  scoreYellowText: '#856404',
+
+  scoreRed: '#C7423D',
+  scoreRedBg: '#FBE7E6',
+  scoreRedBorder: '#F0BFBD',
+  scoreRedText: '#721C24',
 
   white: '#FFFFFF',
   black: '#000000',
