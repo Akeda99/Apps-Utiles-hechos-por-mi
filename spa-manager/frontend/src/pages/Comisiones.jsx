@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { X, Download } from 'lucide-react';
 import { api } from '../api';
 import { exportCsv } from '../utils/exportCsv';
 
@@ -62,7 +63,7 @@ export default function Comisiones() {
         </div>
         <div className="spa-page-actions">
           {data.length > 0 && (
-            <button className="spa-btn" onClick={handleExport}>⬇ Exportar CSV</button>
+            <button className="spa-btn" onClick={handleExport}><Download size={14} style={{ marginRight: 4, verticalAlign: -2 }} />Exportar CSV</button>
           )}
           {!from && (
             <div className="spa-segmented">
@@ -80,7 +81,7 @@ export default function Comisiones() {
             <input type="date" className="spa-input" style={{ width: 140, padding: '4px 8px' }}
               value={to} onChange={e => setTo(e.target.value)} placeholder="Hasta" />
             {(from || to) && (
-              <button className="spa-btn spa-btn-sm" onClick={() => { setFrom(''); setTo(''); }}>✕</button>
+              <button className="spa-btn spa-btn-sm" onClick={() => { setFrom(''); setTo(''); }}><X size={14} /></button>
             )}
           </div>
         </div>

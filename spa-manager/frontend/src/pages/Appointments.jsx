@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
@@ -217,7 +218,7 @@ export default function Appointments() {
               onChange={e => setFilterDate(e.target.value)}
             />
             {filterDate && (
-              <button className="spa-btn spa-btn-sm" onClick={() => setFilterDate('')}>✕</button>
+              <button className="spa-btn spa-btn-sm" onClick={() => setFilterDate('')}><X size={14} /></button>
             )}
           </div>
           <button className="spa-btn spa-btn-primary" onClick={openCreate}>

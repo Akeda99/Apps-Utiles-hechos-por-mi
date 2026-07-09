@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CalendarDays } from 'lucide-react';
 import { api } from '../api';
 import Modal from '../components/Modal';
 import Autocomplete from '../components/Autocomplete';
@@ -92,7 +93,7 @@ export default function Schedule() {
           <div className="spa-empty"><div className="spa-empty-title">Cargando...</div></div>
         ) : schedule.length === 0 ? (
           <div className="spa-empty">
-            <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: 'var(--ink-3)' }}><CalendarDays size={32} /></div>
             <div className="spa-empty-title">No hay citas programadas</div>
             para los próximos 30 días
           </div>

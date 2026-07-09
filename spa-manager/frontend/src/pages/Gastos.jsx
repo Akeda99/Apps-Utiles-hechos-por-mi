@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { X, Download } from 'lucide-react';
 import { api } from '../api';
 import Modal from '../components/Modal';
 import { exportCsv } from '../utils/exportCsv';
@@ -110,7 +111,7 @@ export default function Gastos() {
               onChange={e => setFilterDate(e.target.value)}
             />
             {filterDate && (
-              <button className="spa-btn spa-btn-sm" onClick={() => setFilterDate('')}>✕</button>
+              <button className="spa-btn spa-btn-sm" onClick={() => setFilterDate('')}><X size={14} /></button>
             )}
           </div>
           {expenses.length > 0 && (
@@ -123,7 +124,7 @@ export default function Gastos() {
                 e.category,
                 parseFloat(e.amount).toFixed(2),
               ])
-            )}>⬇ Exportar CSV</button>
+            )}><Download size={14} style={{ marginRight: 4, verticalAlign: -2 }} />Exportar CSV</button>
           )}
           <button className="spa-btn spa-btn-primary" onClick={openCreate}>
             + Registrar gasto

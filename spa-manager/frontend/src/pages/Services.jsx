@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Pencil } from 'lucide-react';
 import { api } from '../api';
 import Modal from '../components/Modal';
 
@@ -62,7 +63,7 @@ export default function Services() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    <button className="spa-btn spa-btn-sm" onClick={() => openEdit(s)}>✏️</button>
+                    <button className="spa-btn spa-btn-sm" onClick={() => openEdit(s)}><Pencil size={14} /></button>
                     <button className="spa-btn spa-btn-danger-outline spa-btn-sm" onClick={() => remove(s.id)}>×</button>
                   </div>
                 </div>

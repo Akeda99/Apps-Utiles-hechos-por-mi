@@ -1,25 +1,29 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard, Scissors, Calendar, Users, User, Sparkles,
+  Receipt, Coins, Lock, TrendingUp, Home, LogOut, Menu,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const adminNav = [
-  { to: '/dashboard',    label: 'Dashboard',      icon: '📊', group: 'Operación' },
-  { to: '/appointments', label: 'Atenciones',     icon: '✂️',  group: 'Operación' },
-  { to: '/schedule',     label: 'Agenda',         icon: '📅', group: 'Operación' },
-  { to: '/employees',    label: 'Empleados',      icon: '👥', group: 'Operación' },
-  { to: '/clients',      label: 'Clientes',       icon: '👤', group: 'Operación' },
-  { to: '/services',     label: 'Servicios',      icon: '💆', group: 'Operación' },
-  { to: '/gastos',       label: 'Gastos',         icon: '💸', group: 'Finanzas' },
-  { to: '/comisiones',   label: 'Comisiones',     icon: '💰', group: 'Finanzas' },
-  { to: '/cierre',       label: 'Cierre del día', icon: '🔒', group: 'Finanzas' },
-  { to: '/reports',      label: 'Reportes',       icon: '📈', group: 'Finanzas' },
+  { to: '/dashboard',    label: 'Dashboard',      icon: LayoutDashboard, group: 'Operación' },
+  { to: '/appointments', label: 'Atenciones',     icon: Scissors,        group: 'Operación' },
+  { to: '/schedule',     label: 'Agenda',         icon: Calendar,        group: 'Operación' },
+  { to: '/employees',    label: 'Empleados',      icon: Users,           group: 'Operación' },
+  { to: '/clients',      label: 'Clientes',       icon: User,            group: 'Operación' },
+  { to: '/services',     label: 'Servicios',      icon: Sparkles,        group: 'Operación' },
+  { to: '/gastos',       label: 'Gastos',         icon: Receipt,         group: 'Finanzas' },
+  { to: '/comisiones',   label: 'Comisiones',     icon: Coins,           group: 'Finanzas' },
+  { to: '/cierre',       label: 'Cierre del día', icon: Lock,            group: 'Finanzas' },
+  { to: '/reports',      label: 'Reportes',       icon: TrendingUp,      group: 'Finanzas' },
 ];
 
 const workerNav = [
-  { to: '/dashboard',    label: 'Mi día',     icon: '🏠' },
-  { to: '/appointments', label: 'Atenciones', icon: '✂️' },
-  { to: '/schedule',     label: 'Mi agenda',  icon: '📅' },
-  { to: '/clients',      label: 'Clientes',   icon: '👤' },
+  { to: '/dashboard',    label: 'Mi día',     icon: Home },
+  { to: '/appointments', label: 'Atenciones', icon: Scissors },
+  { to: '/schedule',     label: 'Mi agenda',  icon: Calendar },
+  { to: '/clients',      label: 'Clientes',   icon: User },
 ];
 
 const avatarColors = ['#A8543B', '#5C7A4E', '#7E4E5C', '#4E5C7A', '#B89048'];
@@ -52,7 +56,7 @@ export default function Layout() {
       {/* Topbar */}
       <header className="spa-topbar">
         <button className="spa-hamburger" onClick={() => setSidebarOpen(v => !v)} aria-label="Menú">
-          ☰
+          <Menu size={18} />
         </button>
         <div className="spa-brand">
           <span className="spa-brand-mark">S</span>
@@ -83,7 +87,7 @@ export default function Layout() {
             style={{ marginLeft: 4, color: 'var(--danger)' }}
             title="Cerrar sesión"
           >
-            🚪
+            <LogOut size={16} />
           </button>
         </div>
       </header>
@@ -109,7 +113,7 @@ export default function Layout() {
                     className={({ isActive }) => `spa-nav-item${isActive ? ' active' : ''}`}
                     onClick={closeSidebar}
                   >
-                    <span style={{ fontSize: 15 }}>{item.icon}</span>
+                    <item.icon size={15} />
                     <span>{item.label}</span>
                   </NavLink>
                 ))}
@@ -126,7 +130,7 @@ export default function Layout() {
                 className={({ isActive }) => `spa-nav-item${isActive ? ' active' : ''}`}
                 onClick={closeSidebar}
               >
-                <span style={{ fontSize: 15 }}>{item.icon}</span>
+                <item.icon size={15} />
                 <span>{item.label}</span>
               </NavLink>
             ))}

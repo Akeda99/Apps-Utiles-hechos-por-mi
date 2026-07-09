@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Download, Printer } from 'lucide-react';
 import { api } from '../api';
 import { exportCsv } from '../utils/exportCsv';
 
@@ -89,10 +90,10 @@ export default function CierreDia() {
             }}>Siguiente ›</button>
           </div>
           <button className="spa-btn" onClick={handleExport}>
-            ⬇ Exportar CSV
+            <Download size={14} style={{ marginRight: 4, verticalAlign: -2 }} />Exportar CSV
           </button>
           <button className="spa-btn spa-btn-primary" onClick={handlePrint}>
-            🖨 Imprimir / PDF
+            <Printer size={14} style={{ marginRight: 4, verticalAlign: -2 }} />Imprimir / PDF
           </button>
         </div>
       </div>
